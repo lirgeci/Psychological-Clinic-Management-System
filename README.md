@@ -1,1 +1,0 @@
-# Psychological-Clinic-Management-System
