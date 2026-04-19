@@ -31,6 +31,13 @@ db.Therapist = require('./therapist')(sequelize);
 db.Appointment = require('./Appointment')(sequelize);
 db.Session = require('./Session')(sequelize);
 
+// Phase 3 - Clinical & Financial
+db.Diagnosis = require('./Diagnosis')(sequelize);
+db.TreatmentPlan = require('./TreatmentPlan')(sequelize);
+db.SessionNote = require('./SessionNote')(sequelize);
+db.QuestionnaireResponse = require('./QuestionnaireResponse')(sequelize);
+db.Invoice = require('./Invoice')(sequelize);
+
 Object.keys(db).forEach((modelName) => {
   if (db[modelName] && typeof db[modelName].associate === 'function') {
     db[modelName].associate(db);
