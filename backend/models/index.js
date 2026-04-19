@@ -15,12 +15,21 @@ const db = {};
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
 
+// Phase 1 - Identity System
 db.User = require('./User')(sequelize);
 db.Role = require('./Role')(sequelize);
 db.UserRole = require('./UserRole')(sequelize);
 db.UserClaim = require('./UserClaim')(sequelize);
 db.UserToken = require('./UserToken')(sequelize);
 db.RefreshToken = require('./RefreshToken')(sequelize);
+
+// Phase 2 - Core Entities & Scheduling
+db.Room = require('./Room')(sequelize);
+db.Questionnaire = require('./Questionnaire')(sequelize);
+db.Patient = require('./patient')(sequelize);
+db.Therapist = require('./therapist')(sequelize);
+db.Appointment = require('./Appointment')(sequelize);
+db.Session = require('./Session')(sequelize);
 
 Object.keys(db).forEach((modelName) => {
   if (db[modelName] && typeof db[modelName].associate === 'function') {

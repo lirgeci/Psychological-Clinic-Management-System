@@ -13,7 +13,7 @@ module.exports = (sequelize) => {
     Description: { type: DataTypes.TEXT },
     Type: { type: DataTypes.STRING },
     QuestionsJson: { type: DataTypes.JSON },
-    CreatedAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
+    CreatedDate: { type: DataTypes.DATE, defaultValue: DataTypes.NOW }
   }, { sequelize, tableName: 'Questionnaires', timestamps: false });
   return Questionnaire;
 };

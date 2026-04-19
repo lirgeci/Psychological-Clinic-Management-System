@@ -2,12 +2,13 @@ const { DataTypes, Model } = require('sequelize');
 
 class Patient extends Model {
   static associate(models) {
-    Patient.hasMany(models.Session, { foreignKey: 'patientId' });
-    Patient.hasMany(models.Diagnosis, { foreignKey: 'patientId' });
-    Patient.hasMany(models.TreatmentPlan, { foreignKey: 'patientId' });
-    Patient.hasMany(models.Appointment, { foreignKey: 'patientId' });
-    Patient.hasMany(models.Invoice, { foreignKey: 'patientId' });
-    Patient.hasMany(models.QuestionnaireResponse, { foreignKey: 'patientId' });
+    Patient.belongsTo(models.User, { foreignKey: 'UserId', as: 'user' });
+    Patient.hasMany(models.Session, { foreignKey: 'PatientId' });
+    Patient.hasMany(models.Diagnosis, { foreignKey: 'PatientId' });
+    Patient.hasMany(models.TreatmentPlan, { foreignKey: 'PatientId' });
+    Patient.hasMany(models.Appointment, { foreignKey: 'PatientId' });
+    Patient.hasMany(models.Invoice, { foreignKey: 'PatientId' });
+    Patient.hasMany(models.QuestionnaireResponse, { foreignKey: 'PatientId' });
   }
 }
 
@@ -50,6 +51,14 @@ module.exports = (sequelize) => {
       RegistrationDate: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
+      },
+      UserId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+          model: 'Users',
+          key: 'Id',
+        },
       },
     },
     {

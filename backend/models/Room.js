@@ -2,7 +2,7 @@ const { DataTypes, Model } = require('sequelize');
 
 class Room extends Model {
   static associate(models) {
-   
+    Room.hasMany(models.Appointment, { foreignKey: 'RoomId', as: 'appointments' });
   }
 }
 

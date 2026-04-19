@@ -159,91 +159,9 @@ module.exports = {
         onDelete: 'CASCADE',
       },
     });
-    await queryInterface.createTable('Patients', {
-  Id: {
-    type: Sequelize.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-    allowNull: false,
-  },
-  FirstName: {
-    type: Sequelize.STRING,
-    allowNull: false,
-  },
-  LastName: {
-    type: Sequelize.STRING,
-    allowNull: false,
-  },
-  Email: {
-    type: Sequelize.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  Phone: {
-    type: Sequelize.STRING,
-  },
-  DateOfBirth: {
-    type: Sequelize.DATE,
-  },
-  Gender: {
-    type: Sequelize.STRING,
-  },
-  Address: {
-    type: Sequelize.STRING,
-  },
-  EmergencyContact: {
-    type: Sequelize.STRING,
-  },
-  RegistrationDate: {
-    type: Sequelize.DATE,
-    defaultValue: Sequelize.NOW,
-  },
-});
-
-await queryInterface.createTable('Therapists', {
-  Id: {
-    type: Sequelize.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-    allowNull: false,
-  },
-  FirstName: {
-    type: Sequelize.STRING,
-    allowNull: false,
-  },
-  LastName: {
-    type: Sequelize.STRING,
-    allowNull: false,
-  },
-  Email: {
-    type: Sequelize.STRING,
-    allowNull: false,
-    unique: true,
-  },
-  Phone: {
-    type: Sequelize.STRING,
-  },
-  Specialization: {
-    type: Sequelize.STRING,
-  },
-  LicenseNumber: {
-    type: Sequelize.STRING,
-  },
-  Qualifications: {
-    type: Sequelize.TEXT,
-  },
-  EmploymentDate: {
-    type: Sequelize.DATE,
-  },
-  Biography: {
-    type: Sequelize.TEXT,
-  },
-});
   },
 
   async down(queryInterface) {
-     await queryInterface.dropTable('Therapists');
-  await queryInterface.dropTable('Patients');
     await queryInterface.dropTable('RefreshTokens');
     await queryInterface.dropTable('UserTokens');
     await queryInterface.dropTable('UserClaims');
