@@ -18,11 +18,6 @@ module.exports = (sequelize) => {
         autoIncrement: true,
         primaryKey: true,
       },
-      UserName: {
-        type: DataTypes.STRING(100),
-        allowNull: false,
-        unique: true,
-      },
       Email: {
         type: DataTypes.STRING(255),
         allowNull: false,
@@ -31,10 +26,6 @@ module.exports = (sequelize) => {
       PasswordHash: {
         type: DataTypes.STRING(255),
         allowNull: false,
-      },
-      PhoneNumber: {
-        type: DataTypes.STRING(20),
-        allowNull: true,
       },
     },
     {

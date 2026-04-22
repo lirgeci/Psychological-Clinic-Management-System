@@ -1,7 +1,0 @@
-qitu shkojn controllers
-
-shembull:
-
-
-UserController.js
-AppointmentController.js

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useStore } from '../../store/StoreContext';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -9,7 +8,8 @@ import { ActivityIcon } from 'lucide-react';
 import { toast } from 'sonner';
 export function Register() {
   const navigate = useNavigate();
-  const { addEntity } = useStore();
+  const apiBaseUrl =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -56,34 +56,44 @@ export function Register() {
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validate()) {
-      // Create User record
-      const userId = Math.random().toString(36).substr(2, 9);
-      const newUser = {
-        id: userId,
-        email: formData.email,
-        password: formData.password,
-        role: 'patient' as const,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        phone: formData.phone
-      };
-      // Create Patient record
-      const newPatient = {
-        userId,
-        ...newUser,
-        dateOfBirth: formData.dateOfBirth,
-        gender: formData.gender as any,
-        address: formData.address,
-        emergencyContact: formData.emergencyContact,
-        registrationDate: new Date().toISOString().split('T')[0]
-      };
-      addEntity('users', newUser);
-      addEntity('patients', newPatient);
-      toast.success('Registration successful! Please log in.');
-      navigate('/');
+      try {
+        if (!apiBaseUrl) {
+          throw new Error('VITE_API_BASE_URL is not configured.');
+        }
+
+        const response = await fetch(`${apiBaseUrl}/user/register`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            firstName: formData.firstName,
+            lastName: formData.lastName,
+            email: formData.email,
+            phone: formData.phone,
+            dateOfBirth: formData.dateOfBirth,
+            gender: formData.gender,
+            address: formData.address,
+            emergencyContact: formData.emergencyContact,
+            password: formData.password
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Registration failed.');
+        }
+
+        toast.success('Registration successful! Please log in.');
+        navigate('/');
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Registration failed.';
+        toast.error(message);
+      }
     } else {
       toast.error('Please fix the errors in the form.');
     }
