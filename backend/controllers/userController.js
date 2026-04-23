@@ -1,5 +1,5 @@
 const bcrypt = require('bcryptjs');
-const { User, Patient, UserRole, sequelize } = require('../models');
+const { User, Patient, Therapist, UserRole, sequelize } = require('../models');
 
 const REQUIRED_FIELDS = [
   'firstName',
@@ -107,6 +107,288 @@ exports.register = async (req, res) => {
 
     return res.status(500).json({
       message: error.message || 'Registration failed.',
+    });
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    // Method-level validation for pagination query params.
+    const page = Number(req.query.page || 1);
+    const limit = Number(req.query.limit || 10);
+
+    if (!Number.isInteger(page) || !Number.isInteger(limit) || page < 1 || limit < 1) {
+      return res.status(400).json({
+        message: 'Invalid pagination values. page and limit must be positive integers.',
+      });
+    }
+
+    const offset = (page - 1) * limit;
+
+    // Count + fetch users while excluding password hash from the response.
+    const total = await User.count();
+    const users = await User.findAll({
+      attributes: { exclude: ['PasswordHash'] },
+      offset,
+      limit,
+      order: [['Id', 'ASC']],
+    });
+
+    if (!users || users.length === 0) {
+      return res.status(404).json({ message: 'No users found.' });
+    }
+
+    const userIds = users.map((user) => user.Id);
+
+    const patients = await Patient.findAll({
+      where: { UserId: userIds },
+      attributes: ['UserId', 'FirstName', 'LastName', 'Phone'],
+    });
+
+    const therapists = await Therapist.findAll({
+      where: { UserId: userIds },
+      attributes: ['UserId', 'FirstName', 'LastName', 'Phone'],
+    });
+
+    const patientByUserId = new Map(patients.map((patient) => [patient.UserId, patient]));
+    const therapistByUserId = new Map(therapists.map((therapist) => [therapist.UserId, therapist]));
+
+    const usersWithProfile = users.map((user) => {
+      const plainUser = user.toJSON();
+      const patient = patientByUserId.get(user.Id) || null;
+      const therapist = therapistByUserId.get(user.Id) || null;
+      const profile = patient || therapist;
+
+      return {
+        ...plainUser,
+        firstName: profile ? profile.FirstName : null,
+        lastName: profile ? profile.LastName : null,
+        phoneNumber: profile ? profile.Phone : null,
+      };
+    });
+
+    return res.status(200).json({
+      count: total,
+      page,
+      limit,
+      users: usersWithProfile,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || 'Failed to fetch users.',
+    });
+  }
+};
+
+exports.getUserById = async (req, res) => {
+  try {
+    // Method-level validation for user id.
+    const userId = Number(req.params.userId);
+    if (!Number.isInteger(userId) || userId < 1) {
+      return res.status(400).json({ message: 'Invalid userId format.' });
+    }
+
+    const user = await User.findByPk(userId, {
+      attributes: { exclude: ['PasswordHash'] },
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    const patient = await Patient.findOne({
+      where: { UserId: userId },
+      attributes: ['FirstName', 'LastName', 'Phone'],
+    });
+
+    const therapist = await Therapist.findOne({
+      where: { UserId: userId },
+      attributes: ['FirstName', 'LastName', 'Phone'],
+    });
+
+    const profile = patient || therapist;
+
+    const userWithProfile = {
+      ...user.toJSON(),
+      firstName: profile ? profile.FirstName : null,
+      lastName: profile ? profile.LastName : null,
+      phoneNumber: profile ? profile.Phone : null,
+    };
+
+    return res.status(200).json(userWithProfile);
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message || 'Failed to fetch user.',
+    });
+  }
+};
+
+exports.updateUser = async (req, res) => {
+  let transaction;
+
+  try {
+    // Method-level validation for id and payload.
+    const userId = Number(req.params.userId);
+    if (!Number.isInteger(userId) || userId < 1) {
+      return res.status(400).json({ message: 'Invalid userId format.' });
+    }
+
+    const email = req.body.email ?? req.body.Email;
+    const password = req.body.password;
+    const firstName = req.body.firstName;
+    const lastName = req.body.lastName;
+    const phone = req.body.phone ?? req.body.phoneNumber;
+    if (
+      email === undefined &&
+      password === undefined &&
+      firstName === undefined &&
+      lastName === undefined &&
+      phone === undefined
+    ) {
+      return res.status(400).json({
+        message: 'At least one field must be provided: email, firstName, lastName, phone, or password.',
+      });
+    }
+
+    transaction = await sequelize.transaction();
+
+    const existingUser = await User.findByPk(userId, { transaction });
+    if (!existingUser) {
+      await transaction.rollback();
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    // Enforce unique email only when email is being changed.
+    if (email !== undefined && email !== existingUser.Email) {
+      const matchedUsers = await User.findAll({
+        where: { Email: email },
+        transaction,
+      });
+
+      if (matchedUsers.length > 0) {
+        await transaction.rollback();
+        return res.status(409).json({ message: 'Email is already in use.' });
+      }
+    }
+
+    const updatePayload = {};
+    const profilePayload = {};
+
+    if (email !== undefined) {
+      updatePayload.Email = email;
+    }
+
+    if (firstName !== undefined) {
+      profilePayload.FirstName = firstName;
+    }
+
+    if (lastName !== undefined) {
+      profilePayload.LastName = lastName;
+    }
+
+    if (phone !== undefined) {
+      profilePayload.Phone = phone;
+    }
+
+    if (password !== undefined && String(password).trim() !== '') {
+      try {
+        updatePayload.PasswordHash = await bcrypt.hash(password, 12);
+      } catch (hashError) {
+        await transaction.rollback();
+        return res.status(500).json({
+          message: hashError.message || 'Password hashing failed.',
+        });
+      }
+    }
+
+    await User.update(updatePayload, {
+      where: { Id: userId },
+      transaction,
+    });
+
+    if (Object.keys(profilePayload).length > 0) {
+      await Patient.update(profilePayload, {
+        where: { UserId: userId },
+        transaction,
+      });
+
+      await Therapist.update(profilePayload, {
+        where: { UserId: userId },
+        transaction,
+      });
+    }
+
+    const updatedUser = await User.findByPk(userId, {
+      attributes: { exclude: ['PasswordHash'] },
+      transaction,
+    });
+
+    const patient = await Patient.findOne({
+      where: { UserId: userId },
+      attributes: ['FirstName', 'LastName', 'Phone'],
+      transaction,
+    });
+
+    const therapist = await Therapist.findOne({
+      where: { UserId: userId },
+      attributes: ['FirstName', 'LastName', 'Phone'],
+      transaction,
+    });
+
+    const profile = patient || therapist;
+
+    const updatedUserWithProfile = {
+      ...updatedUser.toJSON(),
+      firstName: profile ? profile.FirstName : null,
+      lastName: profile ? profile.LastName : null,
+      phoneNumber: profile ? profile.Phone : null,
+    };
+
+    await transaction.commit();
+
+    return res.status(200).json({
+      message: 'User updated successfully.',
+      user: updatedUserWithProfile,
+    });
+  } catch (error) {
+    if (transaction) {
+      await transaction.rollback();
+    }
+
+    return res.status(500).json({
+      message: error.message || 'Failed to update user.',
+    });
+  }
+};
+
+exports.deleteUser = async (req, res) => {
+  try {
+    // Method-level validation for id.
+    const userId = Number(req.params.userId);
+    if (!Number.isInteger(userId) || userId < 1) {
+      return res.status(400).json({ message: 'Invalid userId format.' });
+    }
+
+    const existingUser = await User.findByPk(userId);
+    if (!existingUser) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    await User.destroy({ where: { Id: userId } });
+
+    return res.status(200).json({
+      success: true,
+      message: 'User deleted successfully',
+    });
+  } catch (error) {
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({
+        message: 'Cannot delete user due to related records.',
+      });
+    }
+
+    return res.status(500).json({
+      message: error.message || 'Failed to delete user.',
     });
   }
 };

@@ -10,11 +10,11 @@ interface AdminCrudPageProps<T> {
   searchKey: keyof T;
   FormComponent: React.FC<{
     initialData?: T;
-    onSubmit: (data: any) => void;
+    onSubmit: (data: any) => void | Promise<void>;
     onCancel: () => void;
   }>;
-  onAdd: (data: any) => void;
-  onUpdate: (id: string, data: any) => void;
+  onAdd: (data: any) => void | boolean | Promise<void | boolean>;
+  onUpdate: (id: string, data: any) => void | boolean | Promise<void | boolean>;
   onDelete: (id: string) => void;
 }
 export function AdminCrudPage<
@@ -54,13 +54,18 @@ export function AdminCrudPage<
       setItemToDelete(null);
     }
   };
-  const handleSubmit = (formData: any) => {
-    if (selectedItem) {
-      onUpdate(selectedItem.id, formData);
-    } else {
-      onAdd(formData);
+  const handleSubmit = async (formData: any) => {
+    try {
+      const result = selectedItem ?
+      await onUpdate(selectedItem.id, formData) :
+      await onAdd(formData);
+
+      if (result !== false) {
+        setIsFormOpen(false);
+      }
+    } catch (_error) {
+      // Keep modal open on submit errors.
     }
-    setIsFormOpen(false);
   };
   const actions = (row: T) =>
   <div className="flex justify-end gap-2">

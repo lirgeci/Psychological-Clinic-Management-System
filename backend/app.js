@@ -3,8 +3,9 @@ const dotenv = require('dotenv');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const bcrypt = require('bcryptjs');
 const userRoutes = require('./routes/userRoutes');
-const { Role } = require('./models');
+const { Role, User, UserRole } = require('./models');
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -45,10 +46,40 @@ const seedRoles = async () => {
 	}
 };
 
+const seedAdminUser = async () => {
+	const adminEmail = 'admin@phms.com';
+	const adminPassword = process.env.ADMIN_SEED_PASSWORD || 'Admin123!';
+
+	let adminUser = await User.findOne({ where: { Email: adminEmail } });
+
+	if (!adminUser) {
+		const passwordHash = await bcrypt.hash(adminPassword, 12);
+		adminUser = await User.create({
+			Email: adminEmail,
+			PasswordHash: passwordHash,
+		});
+	}
+
+	const adminRoleLink = await UserRole.findOne({
+		where: {
+			UserId: adminUser.Id,
+			RoleId: 1,
+		},
+	});
+
+	if (!adminRoleLink) {
+		await UserRole.create({
+			UserId: adminUser.Id,
+			RoleId: 1,
+		});
+	}
+};
+
 const startServer = async () => {
 	try {
 		// Seed fixed roles once on startup without duplicating existing rows.
 		await seedRoles();
+		await seedAdminUser();
 
 		app.listen(PORT, () => {
 			const baseUrl = `http://localhost:${PORT}`;

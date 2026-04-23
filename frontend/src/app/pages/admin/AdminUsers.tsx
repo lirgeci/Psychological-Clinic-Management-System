@@ -1,21 +1,79 @@
-import React, { useState, Component } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useStore } from '../../store/StoreContext';
 import { AdminCrudPage } from '../../components/ui/AdminCrudPage';
+import { Column } from '../../components/ui/DataTable';
 import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
-const UserForm = ({ initialData, onSubmit, onCancel }: any) => {
-  const [formData, setFormData] = useState(
-    initialData || {
+import { toast } from 'sonner';
+
+type UserRole = 'patient' | 'therapist' | 'admin';
+
+interface UserFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+}
+
+interface UserFormProps {
+  initialData?: (Partial<UserFormData> & { id?: string });
+  onSubmit: (data: UserFormData) => void | Promise<void>;
+  onCancel: () => void;
+}
+
+interface ApiUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  role: UserRole;
+}
+
+const UserForm = ({ initialData, onSubmit, onCancel }: UserFormProps) => {
+  const apiBaseUrl =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
+  const [formData, setFormData] = useState<UserFormData>({
       firstName: '',
       lastName: '',
       email: '',
       phone: '',
-      role: 'patient',
-      password: ''
-    }
-  );
+      ...initialData,
+      password: initialData?.password || '',
+    });
+
+  useEffect(() => {
+    const loadUserById = async () => {
+      if (!initialData?.id || !apiBaseUrl) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`${apiBaseUrl}/users/get-by-id/${initialData.id}`);
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Failed to fetch user details.');
+        }
+
+        setFormData((prev) => ({
+          ...prev,
+          firstName: String(result.firstName ?? ''),
+          lastName: String(result.lastName ?? ''),
+          email: String(result.Email ?? result.email ?? ''),
+          phone: String(result.phoneNumber ?? ''),
+        }));
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load user details.';
+        toast.error(message);
+      }
+    };
+
+    loadUserById();
+  }, [apiBaseUrl, initialData?.id]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit(formData);
@@ -68,37 +126,11 @@ const UserForm = ({ initialData, onSubmit, onCancel }: any) => {
           phone: e.target.value
         })
         } />
-      
-      <Select
-        label="Role"
-        required
-        value={formData.role}
-        onChange={(e) =>
-        setFormData({
-          ...formData,
-          role: e.target.value
-        })
-        }
-        options={[
-        {
-          label: 'Patient',
-          value: 'patient'
-        },
-        {
-          label: 'Therapist',
-          value: 'therapist'
-        },
-        {
-          label: 'Admin',
-          value: 'admin'
-        }]
-        } />
-      
-      {!initialData &&
+
       <Input
         label="Password"
         type="password"
-        required
+        placeholder="Leave blank to keep current password"
         value={formData.password}
         onChange={(e) =>
         setFormData({
@@ -106,8 +138,7 @@ const UserForm = ({ initialData, onSubmit, onCancel }: any) => {
           password: e.target.value
         })
         } />
-
-      }
+      <p className="text-xs text-slate-500">If you leave this blank, password remains the same.</p>
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="outline" onClick={onCancel}>
           Cancel
@@ -118,27 +149,134 @@ const UserForm = ({ initialData, onSubmit, onCancel }: any) => {
 
 };
 export function AdminUsers() {
-  const { users, addEntity, updateEntity, deleteEntity } = useStore();
-  const columns = [
+  const { users, addEntity } = useStore();
+  const [apiUsers, setApiUsers] = useState<ApiUser[]>(users as ApiUser[]);
+  const apiBaseUrl =
+  (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
+
+  const loadUsers = useCallback(async () => {
+    try {
+      if (!apiBaseUrl) {
+        throw new Error('VITE_API_BASE_URL is not configured.');
+      }
+
+      const response = await fetch(`${apiBaseUrl}/users/get-all`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to fetch users.');
+      }
+
+      const mappedUsers = (result.users || []).map((user: Record<string, unknown>) => ({
+        id: String(user.Id ?? user.userId ?? ''),
+        email: String(user.Email ?? user.email ?? ''),
+        firstName: String(user.firstName ?? ''),
+        lastName: String(user.lastName ?? ''),
+        phone: String(user.phoneNumber ?? '-'),
+        role:
+        (user.role as UserRole | undefined) ??
+        (user.firstName || user.lastName || user.phoneNumber ? 'patient' : 'admin')
+      }));
+
+      setApiUsers(mappedUsers);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to fetch users.';
+      toast.error(message);
+    }
+  }, [apiBaseUrl]);
+
+  useEffect(() => {
+    loadUsers();
+  }, [loadUsers]);
+
+  const handleUpdate = async (id: string, data: UserFormData) => {
+    try {
+      if (!apiBaseUrl) {
+        throw new Error('VITE_API_BASE_URL is not configured.');
+      }
+
+      const payload: Record<string, string> = {
+        email: data.email,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+      };
+
+      if (data.password.trim() !== '') {
+        payload.password = data.password;
+      }
+
+      const response = await fetch(`${apiBaseUrl}/users/update/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to update user.');
+      }
+
+      await loadUsers();
+      toast.success(result.message || 'User updated successfully.');
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update user.';
+      toast.error(message);
+      return false;
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      if (!apiBaseUrl) {
+        throw new Error('VITE_API_BASE_URL is not configured.');
+      }
+
+      const response = await fetch(`${apiBaseUrl}/users/delete/${id}`, {
+        method: 'DELETE'
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to delete user.');
+      }
+
+      await loadUsers();
+      toast.success(result.message || 'User deleted successfully.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete user.';
+      toast.error(message);
+    }
+  };
+
+  const columns: Column<ApiUser>[] = [
   {
     header: 'Name',
-    accessor: (row: any) => `${row.firstName} ${row.lastName}`,
+    accessor: (row: ApiUser) => {
+      const fullName = `${row.firstName || ''} ${row.lastName || ''}`.trim();
+      return fullName || '-';
+    },
     sortable: true,
     sortKey: 'firstName'
   },
   {
     header: 'Email',
-    accessor: 'email' as keyof (typeof users)[0],
+    accessor: 'email',
     sortable: true,
     sortKey: 'email'
   },
   {
     header: 'Phone',
-    accessor: 'phone' as keyof (typeof users)[0]
+    accessor: 'phone'
   },
   {
     header: 'Role',
-    accessor: (row: any) =>
+    accessor: (row: ApiUser) =>
     <Badge
       variant={
       row.role === 'admin' ?
@@ -156,13 +294,13 @@ export function AdminUsers() {
   return (
     <AdminCrudPage
       title="User Management"
-      data={users}
+      data={apiUsers}
       columns={columns}
       searchKey="email"
       FormComponent={UserForm}
       onAdd={(data) => addEntity('users', data)}
-      onUpdate={(id, data) => updateEntity('users', id, data)}
-      onDelete={(id) => deleteEntity('users', id)} />);
+      onUpdate={handleUpdate}
+      onDelete={handleDelete} />);
 
 
 }
