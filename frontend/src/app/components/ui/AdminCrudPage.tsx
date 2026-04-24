@@ -8,6 +8,7 @@ interface AdminCrudPageProps<T> {
   data: T[];
   columns: Column<T>[];
   searchKey: keyof T;
+  showAddButton?: boolean;
   FormComponent: React.FC<{
     initialData?: T;
     onSubmit: (data: any) => void | Promise<void>;
@@ -26,6 +27,7 @@ export function AdminCrudPage<
   data,
   columns,
   searchKey,
+  showAddButton = true,
   FormComponent,
   onAdd,
   onUpdate,
@@ -85,9 +87,11 @@ export function AdminCrudPage<
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-slate-900">{title}</h1>
-        <Button onClick={handleCreate}>
-          <PlusIcon className="h-4 w-4 mr-2" /> Add New
-        </Button>
+        {showAddButton && (
+          <Button onClick={handleCreate}>
+            <PlusIcon className="h-4 w-4 mr-2" /> Add New
+          </Button>
+        )}
       </div>
 
       <DataTable

@@ -1,5 +1,6 @@
-import React, { useState, createContext, useContext, ReactNode } from 'react';
+import { useState, createContext, useContext, ReactNode } from 'react';
 import {
+  Role,
   User,
   Patient,
   Therapist,
@@ -48,9 +49,64 @@ interface StoreContextType extends StoreState {
   => void;
 }
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
+
+const getCookieValue = (name: string) => {
+  const cookieEntry = document.cookie
+    .split('; ')
+    .find((entry) => entry.startsWith(`${name}=`));
+
+  return cookieEntry ? cookieEntry.substring(name.length + 1) : null;
+};
+
+const decodeJwtPayload = (token: string) => {
+  try {
+    const payload = token.split('.')[1];
+
+    if (!payload) {
+      return null;
+    }
+
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=');
+    return JSON.parse(atob(padded));
+  } catch {
+    return null;
+  }
+};
+
+const getInitialCurrentUser = () => {
+  const token = getCookieValue('token');
+
+  if (!token) {
+    return null;
+  }
+
+  const payload = decodeJwtPayload(token);
+  if (!payload || !payload.roleId) {
+    return null;
+  }
+
+  const role: Role =
+    payload.roleId === 1 ? 'admin' : payload.roleId === 2 ? 'therapist' : 'patient';
+  const roleUser = mockData.mockUsers.find((user) => user.role === role);
+
+  if (roleUser) {
+    return roleUser;
+  }
+
+  return {
+    id: String(payload.userId ?? ''),
+    email: '',
+    role,
+    firstName: '',
+    lastName: '',
+    phone: '',
+  };
+};
+
 export function StoreProvider({ children }: {children: ReactNode;}) {
-  const [state, setState] = useState<StoreState>({
-    currentUser: null,
+  const [state, setState] = useState<StoreState>(() => ({
+    currentUser: getInitialCurrentUser(),
     users: mockData.mockUsers,
     patients: mockData.mockPatients,
     therapists: mockData.mockTherapists,
@@ -63,7 +119,7 @@ export function StoreProvider({ children }: {children: ReactNode;}) {
     invoices: mockData.mockInvoices,
     questionnaires: mockData.mockQuestionnaires,
     questionnaireResponses: []
-  });
+  }));
   const setCurrentUser = (user: User | null) => {
     setState((prev) => ({
       ...prev,

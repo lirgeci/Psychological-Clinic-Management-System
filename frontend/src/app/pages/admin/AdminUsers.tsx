@@ -7,8 +7,6 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { toast } from 'sonner';
 
-type UserRole = 'patient' | 'therapist' | 'admin';
-
 interface UserFormData {
   firstName: string;
   lastName: string;
@@ -29,7 +27,7 @@ interface ApiUser {
   firstName: string;
   lastName: string;
   phone: string;
-  role: UserRole;
+  role: string;
 }
 
 const UserForm = ({ initialData, onSubmit, onCancel }: UserFormProps) => {
@@ -173,9 +171,7 @@ export function AdminUsers() {
         firstName: String(user.firstName ?? ''),
         lastName: String(user.lastName ?? ''),
         phone: String(user.phoneNumber ?? '-'),
-        role:
-        (user.role as UserRole | undefined) ??
-        (user.firstName || user.lastName || user.phoneNumber ? 'patient' : 'admin')
+        role: String(user.role ?? 'Unknown')
       }));
 
       setApiUsers(mappedUsers);
@@ -277,17 +273,22 @@ export function AdminUsers() {
   {
     header: 'Role',
     accessor: (row: ApiUser) =>
+    {
+      const normalizedRole = row.role.toLowerCase();
+
+      return (
     <Badge
       variant={
-      row.role === 'admin' ?
+      normalizedRole === 'admin' ?
       'error' :
-      row.role === 'therapist' ?
+      normalizedRole === 'therapist' ?
       'info' :
       'default'
       }>
-      
           {row.role.toUpperCase()}
         </Badge>
+      );
+    }
 
   }];
 
@@ -297,6 +298,7 @@ export function AdminUsers() {
       data={apiUsers}
       columns={columns}
       searchKey="email"
+      showAddButton={false}
       FormComponent={UserForm}
       onAdd={(data) => addEntity('users', data)}
       onUpdate={handleUpdate}

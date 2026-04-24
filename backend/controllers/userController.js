@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const { User, Patient, Therapist, UserRole, sequelize } = require('../models');
 
 const REQUIRED_FIELDS = [
@@ -129,6 +130,20 @@ exports.getAllUsers = async (req, res) => {
     const total = await User.count();
     const users = await User.findAll({
       attributes: { exclude: ['PasswordHash'] },
+      include: [
+        {
+          model: UserRole,
+          as: 'userRoles',
+          attributes: ['RoleId'],
+          required: false,
+          include: [
+            {
+              association: 'role',
+              attributes: ['Name'],
+            },
+          ],
+        },
+      ],
       offset,
       limit,
       order: [['Id', 'ASC']],
@@ -158,12 +173,17 @@ exports.getAllUsers = async (req, res) => {
       const patient = patientByUserId.get(user.Id) || null;
       const therapist = therapistByUserId.get(user.Id) || null;
       const profile = patient || therapist;
+      const userRoleName =
+        plainUser.userRoles && plainUser.userRoles.length > 0 && plainUser.userRoles[0].role
+          ? plainUser.userRoles[0].role.Name
+          : null;
 
       return {
         ...plainUser,
         firstName: profile ? profile.FirstName : null,
         lastName: profile ? profile.LastName : null,
         phoneNumber: profile ? profile.Phone : null,
+        role: userRoleName,
       };
     });
 
@@ -190,6 +210,20 @@ exports.getUserById = async (req, res) => {
 
     const user = await User.findByPk(userId, {
       attributes: { exclude: ['PasswordHash'] },
+      include: [
+        {
+          model: UserRole,
+          as: 'userRoles',
+          attributes: ['RoleId'],
+          required: false,
+          include: [
+            {
+              association: 'role',
+              attributes: ['Name'],
+            },
+          ],
+        },
+      ],
     });
 
     if (!user) {
@@ -213,6 +247,10 @@ exports.getUserById = async (req, res) => {
       firstName: profile ? profile.FirstName : null,
       lastName: profile ? profile.LastName : null,
       phoneNumber: profile ? profile.Phone : null,
+      role:
+        user.userRoles && user.userRoles.length > 0 && user.userRoles[0].role
+          ? user.userRoles[0].role.Name
+          : null,
     };
 
     return res.status(200).json(userWithProfile);
@@ -391,4 +429,44 @@ exports.deleteUser = async (req, res) => {
       message: error.message || 'Failed to delete user.',
     });
   }
+};
+
+exports.login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required.' });
+    }
+
+    const user = await User.findOne({ where: { Email: email } });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.PasswordHash);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid credentials.' });
+    }
+
+    const userRole = await UserRole.findOne({ where: { UserId: user.Id } });
+    if (!userRole) {
+      return res.status(403).json({ message: 'No role assigned to this user.' });
+    }
+
+    const token = jwt.sign(
+      { userId: user.Id, roleId: userRole.RoleId },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '8h' }
+    );
+
+    return res.status(200).json({ token });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Login failed.' });
+  }
+};
+
+exports.logout = async (_req, res) => {
+  // JWT is stateless, so logout is handled by the frontend clearing the cookie.
+  return res.status(200).json({ message: 'Logged out successfully.' });
 };

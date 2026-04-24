@@ -5,7 +5,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const bcrypt = require('bcryptjs');
 const userRoutes = require('./routes/userRoutes');
-const { Role, User, UserRole } = require('./models');
+const { Role, User, UserRole, Therapist } = require('./models');
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
@@ -75,11 +75,46 @@ const seedAdminUser = async () => {
 	}
 };
 
+const seedTherapistUser = async () => {
+	const therapistEmail = 'therapist@phms.com';
+	const therapistPassword = process.env.THERAPIST_SEED_PASSWORD || 'Therapist123!';
+
+	// Keep the seed idempotent so startup can run repeatedly without duplicates.
+	const therapistUser = await User.findOne({ where: { Email: therapistEmail } });
+
+	if (!therapistUser) {
+		const passwordHash = await bcrypt.hash(therapistPassword, 12);
+		const createdUser = await User.create({
+			Email: therapistEmail,
+			PasswordHash: passwordHash,
+		});
+
+		await Therapist.create({
+			FirstName: 'Default',
+			LastName: 'Therapist',
+			Email: therapistEmail,
+			Phone: '000000000',
+			Specialization: 'General',
+			LicenseNumber: 'LIC-001',
+			Qualifications: 'Licensed therapist with general clinical training.',
+			Biography: 'Default seeded therapist account for system setup and testing.',
+			EmploymentDate: new Date(),
+			UserId: createdUser.Id,
+		});
+
+		await UserRole.create({
+			UserId: createdUser.Id,
+			RoleId: 2,
+		});
+	}
+};
+
 const startServer = async () => {
 	try {
 		// Seed fixed roles once on startup without duplicating existing rows.
 		await seedRoles();
 		await seedAdminUser();
+		await seedTherapistUser();
 
 		app.listen(PORT, () => {
 			const baseUrl = `http://localhost:${PORT}`;

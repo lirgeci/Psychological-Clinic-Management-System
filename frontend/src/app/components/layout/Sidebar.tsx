@@ -1,4 +1,4 @@
-import React from 'react';
+import type { ComponentType } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   HomeIcon,
@@ -7,21 +7,37 @@ import {
   FileTextIcon,
   ActivityIcon,
   ClipboardListIcon,
-  SettingsIcon,
   LogOutIcon,
   DollarSignIcon,
   ClockIcon } from
 'lucide-react';
 import { useStore } from '../../store/StoreContext';
+
+type SidebarLink = {
+  to: string;
+  icon: ComponentType<{ className?: string }>;
+  label: string;
+};
+
 export function Sidebar() {
   const { currentUser, setCurrentUser } = useStore();
   const navigate = useNavigate();
   if (!currentUser) return null;
-  const handleLogout = () => {
+
+  const handleLogout = async () => {
+    try {
+      const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string)?.replace(/\/$/, '');
+      await fetch(`${apiBaseUrl}/auth/logout`, { method: 'POST' });
+    } catch {
+      // If the API call fails, still clear locally.
+    }
+
+    // Clear the JWT cookie by expiring it immediately.
+    document.cookie = 'token=; path=/; max-age=0';
     setCurrentUser(null);
     navigate('/');
   };
-  const patientLinks = [
+  const patientLinks: SidebarLink[] = [
   {
     to: '/patient',
     icon: HomeIcon,
@@ -53,7 +69,7 @@ export function Sidebar() {
     label: 'Clinical Records'
   }];
 
-  const therapistLinks = [
+  const therapistLinks: SidebarLink[] = [
   {
     to: '/therapist',
     icon: HomeIcon,
@@ -75,7 +91,7 @@ export function Sidebar() {
     label: 'My Patients'
   }];
 
-  const adminLinks = [
+  const adminLinks: SidebarLink[] = [
   {
     to: '/admin',
     icon: HomeIcon,
@@ -142,12 +158,12 @@ export function Sidebar() {
     label: 'Responses'
   }];
 
-  let links = [];
+  let links: SidebarLink[] = [];
   if (currentUser.role === 'patient') links = patientLinks;
   if (currentUser.role === 'therapist') links = therapistLinks;
   if (currentUser.role === 'admin') links = adminLinks;
   return (
-    <div className="w-64 bg-slate-800 text-white min-h-screen flex flex-col">
+    <div className="w-64 bg-slate-800 text-white h-screen overflow-y-auto flex flex-col">
       <div className="p-6 border-b border-slate-700">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <ActivityIcon className="h-6 w-6 text-blue-400" />
