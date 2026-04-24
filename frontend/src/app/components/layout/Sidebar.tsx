@@ -163,7 +163,7 @@ export function Sidebar() {
   if (currentUser.role === 'therapist') links = therapistLinks;
   if (currentUser.role === 'admin') links = adminLinks;
   return (
-    <div className="w-64 bg-slate-800 text-white h-screen overflow-y-auto flex flex-col">
+    <div className="sidebar-scrollbar w-64 bg-slate-800 text-white h-screen overflow-y-auto flex flex-col">
       <div className="p-6 border-b border-slate-700">
         <h1 className="text-xl font-bold flex items-center gap-2">
           <ActivityIcon className="h-6 w-6 text-blue-400" />
