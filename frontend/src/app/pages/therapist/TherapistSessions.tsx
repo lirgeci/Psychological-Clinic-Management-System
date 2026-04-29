@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useStore } from '../../store/StoreContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -9,6 +9,49 @@ import { Textarea } from '../../components/ui/Textarea';
 import { Select } from '../../components/ui/Select';
 import { ActivityIcon, PlayIcon, SquareIcon, FileEditIcon } from 'lucide-react';
 import { toast } from 'sonner';
+
+interface ApiAppointment {
+  id: string;
+  patientId: string;
+  therapistId: string;
+  date: string;
+  time: string;
+  duration: number;
+  type: string;
+  status: string;
+}
+
+interface ApiSession {
+  id: string;
+  patientId: string;
+  therapistId: string;
+  date: string;
+  startTime: string;
+  endTime?: string;
+  type: string;
+  status: string;
+}
+
+const apiBaseUrl = ((import.meta as any).env?.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
+
+const formatTime = () =>
+  new Date().toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+
+const mapSessionFromApi = (session: Record<string, unknown>, fallback: Record<string, unknown>) => ({
+  id: String(session.Id ?? session.id ?? fallback.id ?? ''),
+  appointmentId: String(fallback.appointmentId ?? ''),
+  patientId: String(session.PatientId ?? session.patientId ?? fallback.patientId ?? ''),
+  therapistId: String(session.TherapistId ?? session.therapistId ?? fallback.therapistId ?? ''),
+  date: String(session.SessionDate ?? session.date ?? fallback.date ?? ''),
+  startTime: String(session.StartTime ?? session.startTime ?? fallback.startTime ?? ''),
+  endTime: session.EndTime ?? session.endTime ?? fallback.endTime,
+  type: String(session.SessionType ?? session.type ?? fallback.type ?? ''),
+  status: String(session.Status ?? session.status ?? fallback.status ?? '')
+});
+
 export function TherapistSessions() {
   const {
     currentUser,
@@ -39,42 +82,214 @@ export function TherapistSessions() {
     endDate: '',
     status: 'Active'
   });
+  const [apiAppointments, setApiAppointments] = useState<ApiAppointment[]>([]);
+  const [apiSessions, setApiSessions] = useState<ApiSession[]>([]);
+  const [therapistApiId, setTherapistApiId] = useState<string | null>(null);
   const today = new Date().toISOString().split('T')[0];
-  const todaysAppointments = appointments.filter(
-    (a) =>
-    a.therapistId === currentUser?.id &&
-    a.date === today &&
-    a.status === 'Confirmed'
+
+  const loadTherapistAppointments = async () => {
+    if (!currentUser || !apiBaseUrl) {
+      setApiAppointments([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to load therapist profile.');
+      }
+
+      const matchedTherapist = (result.therapists || []).find((therapist: Record<string, unknown>) =>
+        String(therapist.UserId ?? therapist.userId ?? '') === String(currentUser.id)
+      );
+
+      if (!matchedTherapist) {
+        setApiAppointments([]);
+        setTherapistApiId(null);
+        return;
+      }
+
+      const therapistId = String(matchedTherapist.Id ?? matchedTherapist.id ?? '');
+      setTherapistApiId(therapistId);
+      const appointmentsResponse = await fetch(`${apiBaseUrl}/therapists/${therapistId}/appointments`);
+      const appointmentsResult = await appointmentsResponse.json();
+
+      if (!appointmentsResponse.ok) {
+        throw new Error(appointmentsResult.message || 'Failed to load appointments.');
+      }
+
+      const mappedAppointments: ApiAppointment[] = (appointmentsResult || []).map(
+        (appointment: Record<string, unknown>) => ({
+          id: String(appointment.Id ?? appointment.id ?? ''),
+          patientId: String(appointment.PatientId ?? appointment.patientId ?? ''),
+          therapistId: String(appointment.TherapistId ?? appointment.therapistId ?? ''),
+          date: String(appointment.AppointmentDate ?? appointment.date ?? '').slice(0, 10),
+          time: String(appointment.AppointmentTime ?? appointment.time ?? '').slice(0, 5),
+          duration: Number(appointment.DurationMinutes ?? appointment.duration ?? 60),
+          type: String(appointment.Type ?? appointment.type ?? 'Individual'),
+          status: String(appointment.Status ?? appointment.status ?? 'Pending')
+        })
+      );
+
+      setApiAppointments(mappedAppointments);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load appointments.';
+      toast.error(message);
+      setApiAppointments([]);
+      setTherapistApiId(null);
+    }
+  };
+
+  const loadTherapistSessions = async (therapistId: string) => {
+    if (!apiBaseUrl) {
+      setApiSessions([]);
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`);
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to load sessions.');
+      }
+
+      const mappedSessions = (result.sessions || []).map((session: Record<string, unknown>) =>
+        mapSessionFromApi(session, {})
+      );
+
+      const filteredSessions = mappedSessions.filter(
+        (session: ApiSession) => String(session.therapistId) === String(therapistId)
+      );
+
+      setApiSessions(filteredSessions);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load sessions.';
+      toast.error(message);
+      setApiSessions([]);
+    }
+  };
+
+  useEffect(() => {
+    loadTherapistAppointments();
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (therapistApiId) {
+      loadTherapistSessions(therapistApiId);
+    } else {
+      setApiSessions([]);
+    }
+  }, [therapistApiId]);
+
+  const scheduleSource = apiAppointments.length > 0 ? apiAppointments : appointments;
+  const todaysAppointments = scheduleSource.filter((appointment) => {
+    const matchesTherapist = apiAppointments.length > 0 || appointment.therapistId === currentUser?.id;
+    return matchesTherapist && appointment.date === today && appointment.status === 'Confirmed';
+  });
+  const todaysSessions = (apiSessions.length > 0 ? apiSessions : sessions).filter(
+    (session) => session.date === today
   );
-  const todaysSessions = sessions.filter(
-    (s) => s.therapistId === currentUser?.id && s.date === today
-  );
-  const handleStartSession = (apt: any) => {
-    const newSession = {
-      appointmentId: apt.id,
+  const handleStartSession = async (apt: any) => {
+    const startTime = formatTime();
+    const payload = {
       patientId: apt.patientId,
-      therapistId: currentUser!.id,
+      therapistId: apt.therapistId,
       date: today,
-      startTime: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      }),
+      startTime,
       type: apt.type,
       status: 'In Progress'
     };
-    addEntity('sessions', newSession);
-    updateEntity('appointments', apt.id, {
-      status: 'Completed'
-    });
+
+    if (!apiBaseUrl) {
+      addEntity('sessions', {
+        appointmentId: apt.id,
+        ...payload
+      });
+      updateEntity('appointments', apt.id, {
+        status: 'Completed'
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/sessions/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to start session.');
+      }
+
+      const createdSession = mapSessionFromApi(result.session || result, {
+        appointmentId: apt.id,
+        ...payload
+      });
+
+      addEntity('sessions', createdSession);
+      setApiAppointments((prev) =>
+        prev.map((appointment) =>
+          appointment.id === apt.id ? { ...appointment, status: 'Completed' } : appointment
+        )
+      );
+      if (therapistApiId) {
+        await loadTherapistSessions(therapistApiId);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to start session.';
+      toast.error(message);
+    }
   };
-  const handleEndSession = (session: any) => {
-    updateEntity('sessions', session.id, {
-      status: 'Completed',
-      endTime: new Date().toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
-    });
+
+  const handleEndSession = async (session: any) => {
+    const endTime = formatTime();
+
+    if (!apiBaseUrl) {
+      updateEntity('sessions', session.id, {
+        status: 'Completed',
+        endTime
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/sessions/update/${session.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          endTime,
+          status: 'Completed'
+        })
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to end session.');
+      }
+
+      const updatedSession = mapSessionFromApi(result.session || result, {
+        ...session,
+        endTime,
+        status: 'Completed'
+      });
+
+      updateEntity('sessions', session.id, updatedSession);
+      if (therapistApiId) {
+        await loadTherapistSessions(therapistApiId);
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to end session.';
+      toast.error(message);
+    }
   };
   const openDocumentation = (session: any) => {
     setSelectedSession(session);
