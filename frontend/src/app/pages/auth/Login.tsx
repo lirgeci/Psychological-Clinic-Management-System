@@ -69,11 +69,13 @@ export function Login() {
       }
 
       const role = claims.roleId === 1 ? 'admin' : claims.roleId === 2 ? 'therapist' : 'patient';
-      const roleUser = users.find((user) => user.role === role) || null;
+      const matchedMockUser = users.find(
+        (user) => String(user.id) === String(claims.userId)
+      ) || null;
 
-      // Keep protected routes working and preserve existing mock-data dashboards for role pages.
+      // Use token userId as source of truth; only reuse mock user when ids match exactly.
       setCurrentUser(
-        roleUser || {
+        matchedMockUser || {
           id: String(claims.userId ?? ''),
           email,
           role,

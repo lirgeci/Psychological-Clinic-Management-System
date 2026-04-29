@@ -344,6 +344,24 @@ exports.updateUser = async (req, res) => {
       transaction,
     });
 
+    if (email !== undefined) {
+      await Patient.update(
+        { Email: email },
+        {
+          where: { UserId: userId },
+          transaction,
+        }
+      );
+
+      await Therapist.update(
+        { Email: email },
+        {
+          where: { UserId: userId },
+          transaction,
+        }
+      );
+    }
+
     if (Object.keys(profilePayload).length > 0) {
       await Patient.update(profilePayload, {
         where: { UserId: userId },

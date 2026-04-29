@@ -5,6 +5,11 @@ const cors = require('cors');
 const helmet = require('helmet');
 const bcrypt = require('bcryptjs');
 const userRoutes = require('./routes/userRoutes');
+const patientRoutes = require('./routes/patientRoutes');
+const therapistRoutes = require('./routes/therapistRoutes');
+const appointmentRoutes = require('./routes/appointmentRoutes');
+const roomRoutes = require('./routes/roomRoutes');
+const sessionRoutes = require('./routes/sessionRoutes');
 const { Role, User, UserRole, Therapist } = require('./models');
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
@@ -18,6 +23,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', userRoutes);
+app.use('/api', patientRoutes);
+app.use('/api', therapistRoutes);
+app.use('/api', appointmentRoutes);
+app.use('/api', roomRoutes);
+app.use('/api', sessionRoutes);
 
 app.get('/api/health', (_req, res) => {
 	res.status(200).json({

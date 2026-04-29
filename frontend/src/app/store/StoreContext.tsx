@@ -88,10 +88,12 @@ const getInitialCurrentUser = () => {
 
   const role: Role =
     payload.roleId === 1 ? 'admin' : payload.roleId === 2 ? 'therapist' : 'patient';
-  const roleUser = mockData.mockUsers.find((user) => user.role === role);
+  const matchingUser = mockData.mockUsers.find(
+    (user) => String(user.id) === String(payload.userId)
+  );
 
-  if (roleUser) {
-    return roleUser;
+  if (matchingUser) {
+    return matchingUser;
   }
 
   return {
