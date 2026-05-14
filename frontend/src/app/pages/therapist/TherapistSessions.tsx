@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useStore } from '../../store/StoreContext';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -40,6 +40,16 @@ const formatTime = () =>
     minute: '2-digit'
   });
 
+const SESSION_BASE_RATES: Record<string, number> = {
+  Individual: 120,
+  Couple: 140,
+  Family: 160,
+};
+
+const calculateInvoiceAmount = (sessionType: string) => {
+  return SESSION_BASE_RATES[sessionType] || SESSION_BASE_RATES.Individual;
+};
+
 const mapSessionFromApi = (session: Record<string, unknown>, fallback: Record<string, unknown>) => ({
   id: String(session.Id ?? session.id ?? fallback.id ?? ''),
   appointmentId: String(fallback.appointmentId ?? ''),
@@ -57,7 +67,9 @@ export function TherapistSessions() {
     currentUser,
     appointments,
     patients,
+    diagnoses,
     sessions,
+    invoices,
     addEntity,
     updateEntity
   } = useStore();
@@ -78,14 +90,65 @@ export function TherapistSessions() {
   const [planForm, setPlanForm] = useState({
     name: '',
     objectives: '',
+    diagnosisId: '',
     startDate: '',
     endDate: '',
     status: 'Active'
   });
   const [apiAppointments, setApiAppointments] = useState<ApiAppointment[]>([]);
   const [apiSessions, setApiSessions] = useState<ApiSession[]>([]);
+  const [apiPatients, setApiPatients] = useState<Array<Record<string, unknown>>>([]);
+  const [apiDiagnoses, setApiDiagnoses] = useState<Array<Record<string, unknown>>>([]);
   const [therapistApiId, setTherapistApiId] = useState<string | null>(null);
-  const today = new Date().toISOString().split('T')[0];
+  // Use local date to avoid timezone misalignment
+  const today = new Date().toLocaleDateString('en-CA'); // Format: YYYY-MM-DD
+
+  const getPatientDisplayName = (patientId: string) => {
+    if (apiBaseUrl) {
+      const patient = apiPatients.find(
+        (item) => String(item.Id ?? item.id ?? item.UserId ?? item.userId ?? '') === String(patientId)
+      );
+
+      if (patient) {
+        return `${String(patient.FirstName ?? patient.firstName ?? '')} ${String(patient.LastName ?? patient.lastName ?? '')}`.trim();
+      }
+    }
+
+    const storePatient = patients.find((p) => String(p.userId) === String(patientId));
+    return `${storePatient?.firstName || ''} ${storePatient?.lastName || ''}`.trim() || 'Unknown Patient';
+  };
+
+  const loadApiReferenceData = async () => {
+    if (!apiBaseUrl) {
+      setApiPatients([]);
+      setApiDiagnoses([]);
+      return;
+    }
+
+    try {
+      const [patientsResponse, diagnosesResponse] = await Promise.all([
+        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        fetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
+      ]);
+
+      const patientsResult = await patientsResponse.json();
+      const diagnosesResult = await diagnosesResponse.json();
+
+      if (!patientsResponse.ok && patientsResponse.status !== 404) {
+        throw new Error(patientsResult.message || 'Failed to load patients.');
+      }
+
+      if (!diagnosesResponse.ok && diagnosesResponse.status !== 404) {
+        throw new Error(diagnosesResult.message || 'Failed to load diagnoses.');
+      }
+
+      setApiPatients((patientsResult.patients || []).map((patient: Record<string, unknown>) => patient));
+      setApiDiagnoses((diagnosesResult.diagnoses || []).map((diagnosis: Record<string, unknown>) => diagnosis));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load clinical references.';
+      toast.error(message);
+    }
+  };
 
   const loadTherapistAppointments = async () => {
     if (!currentUser || !apiBaseUrl) {
@@ -177,6 +240,10 @@ export function TherapistSessions() {
   }, [currentUser]);
 
   useEffect(() => {
+    loadApiReferenceData();
+  }, []);
+
+  useEffect(() => {
     if (therapistApiId) {
       loadTherapistSessions(therapistApiId);
     } else {
@@ -187,7 +254,9 @@ export function TherapistSessions() {
   const scheduleSource = apiAppointments.length > 0 ? apiAppointments : appointments;
   const todaysAppointments = scheduleSource.filter((appointment) => {
     const matchesTherapist = apiAppointments.length > 0 || appointment.therapistId === currentUser?.id;
-    return matchesTherapist && appointment.date === today && appointment.status === 'Confirmed';
+    // Normalize date comparison to handle both YYYY-MM-DD and datetime strings
+    const appointmentDate = String(appointment.date).slice(0, 10);
+    return matchesTherapist && appointmentDate === today && appointment.status === 'Confirmed';
   });
   const todaysSessions = (apiSessions.length > 0 ? apiSessions : sessions).filter(
     (session) => session.date === today
@@ -256,6 +325,25 @@ export function TherapistSessions() {
         status: 'Completed',
         endTime
       });
+
+      const invoiceExists = invoices.some(
+        (invoice) => String(invoice.sessionId) === String(session.id)
+      );
+
+      if (!invoiceExists) {
+        const amount = calculateInvoiceAmount(String(session.type));
+
+        addEntity('invoices', {
+          patientId: session.patientId,
+          sessionId: session.id,
+          amount,
+          discount: 0,
+          finalAmount: amount,
+          date: today,
+          paymentStatus: 'Pending'
+        });
+      }
+
       return;
     }
 
@@ -309,50 +397,154 @@ export function TherapistSessions() {
     setPlanForm({
       name: '',
       objectives: '',
+      diagnosisId: '',
       startDate: today,
       endDate: '',
       status: 'Active'
     });
   };
-  const saveNotes = () => {
+  const saveNotes = async () => {
     if (!notesForm.clinicalObservations || !notesForm.progressNotes) {
       toast.error('Please fill in required note fields.');
       return;
     }
-    addEntity('sessionNotes', {
-      sessionId: selectedSession.id,
-      therapistId: currentUser!.id,
-      patientId: selectedSession.patientId,
-      ...notesForm,
-      date: today
-    });
-    toast.success('Notes saved successfully');
+
+    if (!apiBaseUrl) {
+      addEntity('sessionNotes', {
+        sessionId: selectedSession.id,
+        therapistId: currentUser!.id,
+        patientId: selectedSession.patientId,
+        ...notesForm,
+        date: today
+      });
+      toast.success('Notes saved successfully');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/session-notes/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sessionId: selectedSession.id,
+          notes: notesForm.clinicalObservations,
+          progress: notesForm.progressNotes,
+          homework: notesForm.homeworkAssigned,
+          nextPlan: notesForm.nextStepsPlan,
+          createdDate: today,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to save session notes.');
+      }
+
+      toast.success(result.message || 'Notes saved successfully');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save notes.';
+      toast.error(message);
+    }
   };
-  const saveDiagnosis = () => {
+  const saveDiagnosis = async () => {
     if (!diagnosisForm.code || !diagnosisForm.name) {
       toast.error('Please fill in required diagnosis fields.');
       return;
     }
-    addEntity('diagnoses', {
-      patientId: selectedSession.patientId,
-      therapistId: currentUser!.id,
-      ...diagnosisForm,
-      date: today
-    });
-    toast.success('Diagnosis saved successfully');
+
+    if (!apiBaseUrl) {
+      addEntity('diagnoses', {
+        patientId: selectedSession.patientId,
+        therapistId: currentUser!.id,
+        ...diagnosisForm,
+        date: today
+      });
+      toast.success('Diagnosis saved successfully');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/diagnoses/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          diagnosisCode: diagnosisForm.code,
+          name: diagnosisForm.name,
+          description: diagnosisForm.description,
+          diagnosisDate: today,
+          severity: diagnosisForm.severity,
+          patientId: selectedSession.patientId,
+          therapistId: selectedSession.therapistId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to save diagnosis.');
+      }
+
+      await loadApiReferenceData();
+      setPlanForm((prev) => ({
+        ...prev,
+        diagnosisId: String(result?.diagnosis?.Id ?? result?.diagnosis?.id ?? prev.diagnosisId),
+      }));
+      toast.success(result.message || 'Diagnosis saved successfully');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save diagnosis.';
+      toast.error(message);
+    }
   };
-  const savePlan = () => {
-    if (!planForm.name || !planForm.objectives) {
+  const savePlan = async () => {
+    if (!planForm.name || !planForm.objectives || !planForm.diagnosisId) {
       toast.error('Please fill in required plan fields.');
       return;
     }
-    addEntity('treatmentPlans', {
-      patientId: selectedSession.patientId,
-      therapistId: currentUser!.id,
-      diagnosisId: 'd1',
-      ...planForm
-    });
-    toast.success('Treatment plan saved successfully');
+
+    if (!apiBaseUrl) {
+      addEntity('treatmentPlans', {
+        ...planForm,
+        patientId: selectedSession.patientId,
+        therapistId: currentUser!.id
+      });
+      toast.success('Treatment plan saved successfully');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${apiBaseUrl}/treatment-plans/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: planForm.name,
+          objectives: planForm.objectives,
+          startDate: planForm.startDate || today,
+          endDate: planForm.endDate || null,
+          status: planForm.status,
+          patientId: selectedSession.patientId,
+          therapistId: selectedSession.therapistId,
+          diagnosisId: planForm.diagnosisId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to save treatment plan.');
+      }
+
+      toast.success(result.message || 'Treatment plan saved successfully');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save treatment plan.';
+      toast.error(message);
+    }
   };
   return (
     <div className="space-y-6">
@@ -369,10 +561,11 @@ export function TherapistSessions() {
           {todaysAppointments.length > 0 ?
           <div className="space-y-4">
               {todaysAppointments.map((apt) => {
-              const patient = patients.find((p) => p.userId === apt.patientId);
-              // Check if session already exists for this appointment
+              const patientName = getPatientDisplayName(String(apt.patientId));
+              // Check if any session exists for this appointment (completed or in-progress) - prevent duplicate sessions
               const sessionExists = todaysSessions.some(
-                (s) => s.appointmentId === apt.id
+                (s) => String(s.patientId) === String(apt.patientId) && 
+                       String(s.therapistId) === String(apt.therapistId)
               );
               if (sessionExists) return null;
               return (
@@ -382,7 +575,7 @@ export function TherapistSessions() {
                   
                     <div>
                       <p className="font-medium text-slate-900">
-                        {patient?.firstName} {patient?.lastName}
+                        {patientName}
                       </p>
                       <p className="text-sm text-slate-500">
                         {apt.time} ({apt.duration} min) - {apt.type}
@@ -395,7 +588,8 @@ export function TherapistSessions() {
 
             })}
               {todaysAppointments.every((apt) =>
-            todaysSessions.some((s) => s.appointmentId === apt.id)
+            todaysSessions.some((s) => String(s.patientId) === String(apt.patientId) && 
+                                       String(s.therapistId) === String(apt.therapistId))
             ) &&
             <p className="text-slate-500 text-center py-4">
                   All today's appointments have been started.
@@ -414,9 +608,7 @@ export function TherapistSessions() {
           {todaysSessions.length > 0 ?
           <div className="space-y-4">
               {todaysSessions.map((session) => {
-              const patient = patients.find(
-                (p) => p.userId === session.patientId
-              );
+              const patientName = getPatientDisplayName(String(session.patientId));
               return (
                 <div
                   key={session.id}
@@ -425,7 +617,7 @@ export function TherapistSessions() {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <p className="font-medium text-slate-900">
-                          {patient?.firstName} {patient?.lastName}
+                          {patientName}
                         </p>
                         <p className="text-sm text-slate-500">
                           Started: {session.startTime}{' '}
@@ -631,6 +823,25 @@ export function TherapistSessions() {
                 name: e.target.value
               })
               } />
+
+            <Select
+              label="Diagnosis *"
+              required
+              value={planForm.diagnosisId}
+              onChange={(e) =>
+                setPlanForm({
+                  ...planForm,
+                  diagnosisId: e.target.value
+                })
+              }
+              options={(apiBaseUrl ? apiDiagnoses : diagnoses)
+                .filter((diagnosis: any) =>
+                  String(diagnosis.PatientId ?? diagnosis.patientId ?? '') === String(selectedSession?.patientId)
+                )
+                .map((diagnosis: any) => ({
+                  label: `${String(diagnosis.DiagnosisCode ?? diagnosis.code ?? '')} - ${String(diagnosis.Name ?? diagnosis.name ?? '')}`,
+                  value: String(diagnosis.Id ?? diagnosis.id ?? '')
+                }))} />
             
             <Textarea
               label="Objectives & Goals *"

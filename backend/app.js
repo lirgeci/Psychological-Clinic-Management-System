@@ -10,6 +10,12 @@ const therapistRoutes = require('./routes/therapistRoutes');
 const appointmentRoutes = require('./routes/appointmentRoutes');
 const roomRoutes = require('./routes/roomRoutes');
 const sessionRoutes = require('./routes/sessionRoutes');
+const sessionNoteRoutes = require('./routes/sessionNoteRoutes');
+const diagnosisRoutes = require('./routes/diagnosisRoutes');
+const treatmentPlanRoutes = require('./routes/treatmentPlanRoutes');
+const questionnaireRoutes = require('./routes/questionnaireRoutes');
+const questionnaireResponseRoutes = require('./routes/questionnaireResponseRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes');
 const { Role, User, UserRole, Therapist } = require('./models');
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
@@ -28,6 +34,12 @@ app.use('/api', therapistRoutes);
 app.use('/api', appointmentRoutes);
 app.use('/api', roomRoutes);
 app.use('/api', sessionRoutes);
+app.use('/api', sessionNoteRoutes);
+app.use('/api', diagnosisRoutes);
+app.use('/api', treatmentPlanRoutes);
+app.use('/api', questionnaireRoutes);
+app.use('/api', questionnaireResponseRoutes);
+app.use('/api', invoiceRoutes);
 
 app.get('/api/health', (_req, res) => {
 	res.status(200).json({
