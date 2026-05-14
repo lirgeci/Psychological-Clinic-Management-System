@@ -27,13 +27,14 @@ export function Sidebar() {
   const handleLogout = async () => {
     try {
       const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string)?.replace(/\/$/, '');
-      await fetch(`${apiBaseUrl}/auth/logout`, { method: 'POST' });
+      await fetch(`${apiBaseUrl}/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch {
       // If the API call fails, still clear locally.
     }
 
-    // Clear the JWT cookie by expiring it immediately.
+    // Clear all auth cookies by expiring them immediately
     document.cookie = 'token=; path=/; max-age=0';
+    document.cookie = 'refresh_token=; path=/; max-age=0';
     setCurrentUser(null);
     navigate('/');
   };

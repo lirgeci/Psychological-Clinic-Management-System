@@ -1,6 +1,7 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { User, Patient, Therapist, UserRole, sequelize } = require('../models');
+const { User, Patient, Therapist, UserRole, RefreshToken, sequelize } = require('../models');
 
 const REQUIRED_FIELDS = [
   'firstName',
@@ -450,6 +451,7 @@ exports.deleteUser = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
+  let transaction;
   try {
     const { email, password } = req.body;
 
@@ -472,19 +474,71 @@ exports.login = async (req, res) => {
       return res.status(403).json({ message: 'No role assigned to this user.' });
     }
 
+    // Generate JWT with 15-minute expiry
     const token = jwt.sign(
       { userId: user.Id, roleId: userRole.RoleId },
       process.env.JWT_SECRET || 'secret',
-      { expiresIn: '8h' }
+      { expiresIn: '15m' }
     );
+
+    // Generate 32-byte random refresh token and base64url encode it
+    const randomBytes = crypto.randomBytes(32);
+    const refreshTokenValue = randomBytes.toString('base64url');
+
+    // Calculate expiry: now + 7 days
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Insert refresh token into DB
+    transaction = await sequelize.transaction();
+    await RefreshToken.create(
+      {
+        UserId: user.Id,
+        Token: refreshTokenValue,
+        Expires: expiresAt,
+        Revoked: null,
+      },
+      { transaction }
+    );
+    await transaction.commit();
+
+    // Set refresh token as HttpOnly cookie (SameSite: Lax, Path: /)
+    res.set('Set-Cookie', `refresh_token=${refreshTokenValue}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${7 * 24 * 60 * 60}`);
 
     return res.status(200).json({ token });
   } catch (error) {
+    if (transaction) {
+      await transaction.rollback();
+    }
     return res.status(500).json({ message: error.message || 'Login failed.' });
   }
 };
 
-exports.logout = async (_req, res) => {
-  // JWT is stateless, so logout is handled by the frontend clearing the cookie.
+exports.logout = async (req, res) => {
+  try {
+    // Read refresh token from HttpOnly cookie
+    const refreshTokenCookie = req.headers.cookie
+      ?.split('; ')
+      .find((c) => c.startsWith('refresh_token='));
+    
+    if (refreshTokenCookie) {
+      const refreshTokenValue = refreshTokenCookie.substring('refresh_token='.length);
+
+      // Delete matching row from RefreshTokens (ignore if not found)
+      await RefreshToken.destroy({
+        where: { Token: refreshTokenValue },
+      });
+    }
+  } catch (error) {
+    // Ignore errors during token deletion; proceed to clear cookies
+  }
+
+  // Clear all auth cookies by setting them to expire in the past
+  const cookieOptions = 'Path=/; Max-Age=-1; HttpOnly; SameSite=Lax';
+  res.set('Set-Cookie', [
+    `refresh_token=; ${cookieOptions}`,
+    `token=; ${cookieOptions}`,
+  ]);
+
   return res.status(200).json({ message: 'Logged out successfully.' });
 };

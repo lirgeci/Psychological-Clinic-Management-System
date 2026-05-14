@@ -50,6 +50,7 @@ export function Login() {
       const response = await fetch(`${apiBaseUrl}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ email, password }),
       });
 
@@ -60,6 +61,7 @@ export function Login() {
         return;
       }
 
+      // Set token cookie; backend controls lifetime for security
       document.cookie = `token=${data.token}; path=/`;
 
       const claims = decodeJwt(data.token);
