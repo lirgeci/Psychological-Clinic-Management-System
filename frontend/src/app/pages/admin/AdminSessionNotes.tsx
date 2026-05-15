@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface SessionNoteFormData {
   sessionId: string;
@@ -190,10 +191,10 @@ export function AdminSessionNotes() {
 
     try {
       const [notesResponse, sessionsResponse, patientsResponse, therapistsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/session-notes/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/session-notes/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
       ]);
 
       const notesResult = await notesResponse.json();
@@ -270,7 +271,7 @@ export function AdminSessionNotes() {
 
       const loadSessionNoteById = async () => {
         try {
-          const response = await fetch(`${apiBaseUrl}/session-notes/get-by-id/${initialData.id}`);
+          const response = await authFetch(`${apiBaseUrl}/session-notes/get-by-id/${initialData.id}`);
           const result = await response.json();
 
           if (!response.ok) {
@@ -419,7 +420,7 @@ export function AdminSessionNotes() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/session-notes/create`, {
+      const response = await authFetch(`${apiBaseUrl}/session-notes/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -465,7 +466,7 @@ export function AdminSessionNotes() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/session-notes/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/session-notes/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -502,7 +503,7 @@ export function AdminSessionNotes() {
         return;
       }
 
-      const response = await fetch(`${apiBaseUrl}/session-notes/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/session-notes/delete/${id}`, {
         method: 'DELETE',
       });
 

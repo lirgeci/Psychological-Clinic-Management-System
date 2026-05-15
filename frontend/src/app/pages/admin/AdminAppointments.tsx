@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface AppointmentFormData {
   patientId: string;
@@ -143,9 +144,9 @@ const AppointmentForm = ({ initialData, onSubmit, onCancel }: AppointmentFormPro
     const loadLookupData = async () => {
       try {
         const [patientsResponse, therapistsResponse, roomsResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-          fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
-          fetch(`${apiBaseUrl}/rooms/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/rooms/get-all?page=1&limit=1000`),
         ]);
 
         const [patientsResult, therapistsResult, roomsResult] = await Promise.all([
@@ -174,7 +175,7 @@ const AppointmentForm = ({ initialData, onSubmit, onCancel }: AppointmentFormPro
       }
 
       try {
-        const response = await fetch(`${apiBaseUrl}/appointments/get-by-id/${initialData.id}`);
+        const response = await authFetch(`${apiBaseUrl}/appointments/get-by-id/${initialData.id}`);
         const result = await response.json();
 
         if (!response.ok) {
@@ -367,7 +368,7 @@ export function AdminAppointments() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/appointments/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/appointments/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -451,7 +452,7 @@ export function AdminAppointments() {
         payload.roomId = data.roomId;
       }
 
-      const response = await fetch(`${apiBaseUrl}/appointments/create`, {
+      const response = await authFetch(`${apiBaseUrl}/appointments/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -507,7 +508,7 @@ export function AdminAppointments() {
 
       payload.roomId = data.roomId || null;
 
-      const response = await fetch(`${apiBaseUrl}/appointments/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/appointments/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -538,7 +539,7 @@ export function AdminAppointments() {
         return;
       }
 
-      const response = await fetch(`${apiBaseUrl}/appointments/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/appointments/delete/${id}`, {
         method: 'DELETE',
       });
 

@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { PlusIcon, TrashIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 const apiBaseUrl = ((import.meta as any).env?.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
 
@@ -230,7 +231,7 @@ export function AdminQuestionnaires() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -291,7 +292,7 @@ export function AdminQuestionnaires() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/questionnaires/create`, {
+      const response = await authFetch(`${apiBaseUrl}/questionnaires/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -327,7 +328,7 @@ export function AdminQuestionnaires() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/questionnaires/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/questionnaires/update/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -360,7 +361,7 @@ export function AdminQuestionnaires() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/questionnaires/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/questionnaires/delete/${id}`, {
         method: 'DELETE',
       });
 

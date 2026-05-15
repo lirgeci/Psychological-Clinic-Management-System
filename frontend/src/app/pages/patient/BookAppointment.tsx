@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { CalendarIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface ApiTherapistOption {
   id: string;
@@ -39,8 +40,8 @@ export function BookAppointment() {
 
       try {
         const [patientsResponse, therapistsResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-          fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
         ]);
 
         const [patientsResult, therapistsResult] = await Promise.all([
@@ -117,7 +118,7 @@ export function BookAppointment() {
         throw new Error('Could not find patient profile for this account.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/appointments/create`, {
+      const response = await authFetch(`${apiBaseUrl}/appointments/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

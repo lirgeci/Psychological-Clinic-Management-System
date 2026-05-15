@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface RoomFormData {
   name: string;
@@ -75,7 +76,7 @@ const RoomForm = ({ initialData, onSubmit, onCancel }: RoomFormProps) => {
       }
 
       try {
-        const response = await fetch(`${apiBaseUrl}/rooms/get-by-id/${initialData.id}`);
+        const response = await authFetch(`${apiBaseUrl}/rooms/get-by-id/${initialData.id}`);
         const result = await response.json();
 
         if (!response.ok) {
@@ -218,7 +219,7 @@ export function AdminRooms() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/rooms/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/rooms/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -262,7 +263,7 @@ export function AdminRooms() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/rooms/create`, {
+      const response = await authFetch(`${apiBaseUrl}/rooms/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +308,7 @@ export function AdminRooms() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/rooms/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/rooms/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -345,7 +346,7 @@ export function AdminRooms() {
         return;
       }
 
-      const response = await fetch(`${apiBaseUrl}/rooms/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/rooms/delete/${id}`, {
         method: 'DELETE',
       });
 

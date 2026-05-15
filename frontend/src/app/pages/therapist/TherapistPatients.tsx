@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { Modal } from '../../components/ui/Modal';
 import { Badge } from '../../components/ui/Badge';
 import { UsersIcon, EyeIcon } from 'lucide-react';
+import authFetch from '../../utils/authFetch';
 import { toast } from 'sonner';
 
 type PatientRecord = {
@@ -63,13 +64,13 @@ export function TherapistPatients() {
           questionnairesResponse,
         ] =
           await Promise.all([
-            fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
-            fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-            fetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
-            fetch(`${apiBaseUrl}/treatment-plans/get-all?page=1&limit=1000`),
-            fetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`),
-            fetch(`${apiBaseUrl}/questionnaire-responses/get-all?page=1&limit=1000`),
-            fetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`),
+            authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+            authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+            authFetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
+            authFetch(`${apiBaseUrl}/treatment-plans/get-all?page=1&limit=1000`),
+            authFetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`),
+            authFetch(`${apiBaseUrl}/questionnaire-responses/get-all?page=1&limit=1000`),
+            authFetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`),
           ]);
 
         const therapistsResult = await therapistsResponse.json();
@@ -107,7 +108,7 @@ export function TherapistPatients() {
         );
 
         if (therapist) {
-          const therapistAppointmentsResponse = await fetch(
+          const therapistAppointmentsResponse = await authFetch(
             `${apiBaseUrl}/therapists/${String(therapist.Id ?? therapist.id ?? '')}/appointments`
           );
           const therapistAppointmentsResult = await therapistAppointmentsResponse.json();

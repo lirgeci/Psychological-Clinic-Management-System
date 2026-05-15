@@ -7,6 +7,7 @@ import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { Badge } from '../../components/ui/Badge';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface TreatmentPlanFormData {
   patientId: string;
@@ -143,10 +144,10 @@ export function AdminTreatmentPlans() {
 
     try {
       const [plansResponse, patientsResponse, therapistsResponse, diagnosesResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/treatment-plans/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/treatment-plans/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
       ]);
 
       const plansResult = await plansResponse.json();
@@ -230,7 +231,7 @@ export function AdminTreatmentPlans() {
 
       const loadTreatmentPlanById = async () => {
         try {
-          const response = await fetch(`${apiBaseUrl}/treatment-plans/get-by-id/${initialData.id}`);
+          const response = await authFetch(`${apiBaseUrl}/treatment-plans/get-by-id/${initialData.id}`);
           const result = await response.json();
 
           if (!response.ok) {
@@ -425,7 +426,7 @@ export function AdminTreatmentPlans() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/treatment-plans/create`, {
+      const response = await authFetch(`${apiBaseUrl}/treatment-plans/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -475,7 +476,7 @@ export function AdminTreatmentPlans() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/treatment-plans/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/treatment-plans/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -513,7 +514,7 @@ export function AdminTreatmentPlans() {
         return;
       }
 
-      const response = await fetch(`${apiBaseUrl}/treatment-plans/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/treatment-plans/delete/${id}`, {
         method: 'DELETE',
       });
 

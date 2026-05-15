@@ -6,6 +6,7 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface UserFormData {
   firstName: string;
@@ -49,7 +50,7 @@ const UserForm = ({ initialData, onSubmit, onCancel }: UserFormProps) => {
       }
 
       try {
-        const response = await fetch(`${apiBaseUrl}/users/get-by-id/${initialData.id}`);
+        const response = await authFetch(`${apiBaseUrl}/users/get-by-id/${initialData.id}`);
         const result = await response.json();
 
         if (!response.ok) {
@@ -158,7 +159,7 @@ export function AdminUsers() {
         throw new Error('VITE_API_BASE_URL is not configured.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/users/get-all`);
+      const response = await authFetch(`${apiBaseUrl}/users/get-all`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -202,7 +203,7 @@ export function AdminUsers() {
         payload.password = data.password;
       }
 
-      const response = await fetch(`${apiBaseUrl}/users/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/users/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -232,7 +233,7 @@ export function AdminUsers() {
         throw new Error('VITE_API_BASE_URL is not configured.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/users/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/users/delete/${id}`, {
         method: 'DELETE'
       });
 

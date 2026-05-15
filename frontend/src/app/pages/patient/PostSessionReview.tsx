@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { FileTextIcon, ActivityIcon, TargetIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 const apiBaseUrl =
   (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
@@ -21,7 +22,7 @@ export function PostSessionReview() {
       }
 
       try {
-        const patientsResponse = await fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
+        const patientsResponse = await authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
         const patientsResult = await patientsResponse.json();
 
         if (!patientsResponse.ok && patientsResponse.status !== 404) {
@@ -43,8 +44,8 @@ export function PostSessionReview() {
         setApiPatientId(patientId);
 
         const [diagnosesResponse, plansResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
-          fetch(`${apiBaseUrl}/treatment-plans/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/treatment-plans/get-all?page=1&limit=1000`),
         ]);
 
         const diagnosesResult = await diagnosesResponse.json();

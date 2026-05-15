@@ -8,6 +8,7 @@ import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface DiagnosisFormData {
   patientId: string;
@@ -130,9 +131,9 @@ export function AdminDiagnoses() {
 
     try {
       const [diagnosesResponse, patientsResponse, therapistsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
       ]);
 
       const diagnosesResult = await diagnosesResponse.json();
@@ -204,7 +205,7 @@ export function AdminDiagnoses() {
 
       const loadDiagnosisById = async () => {
         try {
-          const response = await fetch(`${apiBaseUrl}/diagnoses/get-by-id/${initialData.id}`);
+          const response = await authFetch(`${apiBaseUrl}/diagnoses/get-by-id/${initialData.id}`);
           const result = await response.json();
 
           if (!response.ok) {
@@ -422,7 +423,7 @@ export function AdminDiagnoses() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/diagnoses/create`, {
+      const response = await authFetch(`${apiBaseUrl}/diagnoses/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -470,7 +471,7 @@ export function AdminDiagnoses() {
         return true;
       }
 
-      const response = await fetch(`${apiBaseUrl}/diagnoses/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/diagnoses/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -508,7 +509,7 @@ export function AdminDiagnoses() {
         return;
       }
 
-      const response = await fetch(`${apiBaseUrl}/diagnoses/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/diagnoses/delete/${id}`, {
         method: 'DELETE',
       });
 

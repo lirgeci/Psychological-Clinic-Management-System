@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { Column } from '../../components/ui/DataTable';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface ApiInvoice {
   id: string;
@@ -93,7 +94,7 @@ const InvoiceForm = ({ initialData, onSubmit, onCancel }: any) => {
 
     const loadPatients = async () => {
       try {
-        const response = await fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
+        const response = await authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
         const result = await response.json();
 
         if (!response.ok && response.status !== 404) {
@@ -232,8 +233,8 @@ export function AdminInvoices() {
 
     try {
       const [invoiceResponse, patientResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/invoices/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/invoices/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
       ]);
 
       const invoiceResult = await invoiceResponse.json();
@@ -325,7 +326,7 @@ export function AdminInvoices() {
       }}
       onUpdate={async (id, data) => {
         if (apiBaseUrl) {
-          const response = await fetch(`${apiBaseUrl}/invoices/update/${id}`, {
+          const response = await authFetch(`${apiBaseUrl}/invoices/update/${id}`, {
             method: 'PUT',
             headers: {
               'Content-Type': 'application/json',
@@ -347,7 +348,7 @@ export function AdminInvoices() {
       }}
       onDelete={async (id) => {
         if (apiBaseUrl) {
-          const response = await fetch(`${apiBaseUrl}/invoices/delete/${id}`, {
+          const response = await authFetch(`${apiBaseUrl}/invoices/delete/${id}`, {
             method: 'DELETE',
           });
 

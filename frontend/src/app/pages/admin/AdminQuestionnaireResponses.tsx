@@ -5,6 +5,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Button } from '../../components/ui/Button';
 import { ClipboardListIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 const apiBaseUrl = ((import.meta as any).env?.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
 
@@ -77,9 +78,9 @@ export function AdminQuestionnaireResponses() {
 
     try {
       const [responsesResponse, questionnairesResponse, patientsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/questionnaire-responses/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/questionnaire-responses/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
       ]);
 
       const [responsesResult, questionnairesResult, patientsResult] = await Promise.all([

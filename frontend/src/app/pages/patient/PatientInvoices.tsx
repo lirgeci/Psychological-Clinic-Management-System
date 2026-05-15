@@ -4,6 +4,7 @@ import { DataTable } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { DollarSignIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface ApiPatient {
   Id?: string;
@@ -44,8 +45,8 @@ export function PatientInvoices() {
 
       try {
         const [patientResponse, invoiceResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-          fetch(`${apiBaseUrl}/invoices/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/invoices/get-all?page=1&limit=1000`),
         ]);
 
         const patientResult = await patientResponse.json();

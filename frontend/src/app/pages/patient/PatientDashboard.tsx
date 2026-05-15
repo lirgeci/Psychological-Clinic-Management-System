@@ -6,6 +6,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 import {
   UserIcon,
   CalendarIcon,
@@ -102,7 +103,7 @@ export function PatientDashboard() {
       }
 
       try {
-        const patientListResponse = await fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
+        const patientListResponse = await authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
         const patientListResult = await patientListResponse.json();
 
         if (!patientListResponse.ok) {
@@ -140,7 +141,7 @@ export function PatientDashboard() {
 
         setApiPatient(mappedPatient);
 
-        const appointmentResponse = await fetch(
+        const appointmentResponse = await authFetch(
           `${apiBaseUrl}/patients/${mappedPatient.id}/appointments`
         );
         const appointmentResult = await appointmentResponse.json();
@@ -190,7 +191,7 @@ export function PatientDashboard() {
   const handleSaveProfile = async () => {
     if (apiPatient && apiBaseUrl) {
       try {
-        const response = await fetch(`${apiBaseUrl}/patients/update/${apiPatient.id}`, {
+        const response = await authFetch(`${apiBaseUrl}/patients/update/${apiPatient.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

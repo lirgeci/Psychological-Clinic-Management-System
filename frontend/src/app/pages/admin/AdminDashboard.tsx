@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
+import authFetch from '../../utils/authFetch';
 import {
   UsersIcon,
   CalendarIcon,
@@ -30,12 +31,12 @@ export function AdminDashboard() {
         
         // Fetch all data in parallel
         const [patientsRes, therapistsRes, appointmentsRes, sessionsRes, invoicesRes, roomsRes] = await Promise.all([
-          fetch(`${API_URL}/patients/get-all`),
-          fetch(`${API_URL}/therapists/get-all`),
-          fetch(`${API_URL}/appointments/get-all`),
-          fetch(`${API_URL}/sessions/get-all`),
-          fetch(`${API_URL}/invoices/get-all`),
-          fetch(`${API_URL}/rooms/get-all`)
+          authFetch(`${API_URL}/patients/get-all`),
+          authFetch(`${API_URL}/therapists/get-all`),
+          authFetch(`${API_URL}/appointments/get-all`),
+          authFetch(`${API_URL}/sessions/get-all`),
+          authFetch(`${API_URL}/invoices/get-all`),
+          authFetch(`${API_URL}/rooms/get-all`),
         ]);
 
         const patients = patientsRes.ok ? (await patientsRes.json()).patients || [] : [];

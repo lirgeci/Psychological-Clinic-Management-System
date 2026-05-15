@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface PatientFormData {
   firstName: string;
@@ -69,7 +70,7 @@ const PatientForm = ({ initialData, onSubmit, onCancel }: {
       }
 
       try {
-        const response = await fetch(`${apiBaseUrl}/patients/get-by-id/${initialData.id}`);
+        const response = await authFetch(`${apiBaseUrl}/patients/get-by-id/${initialData.id}`);
         const result = await response.json();
 
         if (!response.ok) {
@@ -250,7 +251,7 @@ export function AdminPatients() {
         throw new Error('VITE_API_BASE_URL is not configured.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -325,7 +326,7 @@ export function AdminPatients() {
         throw new Error('Password is required for new patients.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/patients/create`, {
+      const response = await authFetch(`${apiBaseUrl}/patients/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -360,7 +361,7 @@ export function AdminPatients() {
         ? { ...updateData, password }
         : updateData;
 
-      const response = await fetch(`${apiBaseUrl}/patients/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/patients/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -390,7 +391,7 @@ export function AdminPatients() {
         throw new Error('VITE_API_BASE_URL is not configured.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/patients/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/patients/delete/${id}`, {
         method: 'DELETE',
       });
 

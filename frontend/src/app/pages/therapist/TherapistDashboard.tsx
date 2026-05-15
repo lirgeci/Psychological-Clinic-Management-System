@@ -7,6 +7,7 @@ import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 import {
   UserIcon,
   CalendarIcon,
@@ -74,7 +75,7 @@ export function TherapistDashboard() {
       }
 
       try {
-        const response = await fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`);
+        const response = await authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`);
         const result = await response.json();
 
         if (!response.ok) {
@@ -114,7 +115,7 @@ export function TherapistDashboard() {
           bio: mappedTherapist.bio,
         });
 
-        const appointmentResponse = await fetch(`${apiBaseUrl}/therapists/${mappedTherapist.id}/appointments`);
+        const appointmentResponse = await authFetch(`${apiBaseUrl}/therapists/${mappedTherapist.id}/appointments`);
         const appointmentResult = await appointmentResponse.json();
 
         if (!appointmentResponse.ok) {
@@ -192,7 +193,7 @@ export function TherapistDashboard() {
 
     if (apiTherapist && apiBaseUrl) {
       try {
-        const response = await fetch(`${apiBaseUrl}/therapists/update/${apiTherapist.id}`, {
+        const response = await authFetch(`${apiBaseUrl}/therapists/update/${apiTherapist.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

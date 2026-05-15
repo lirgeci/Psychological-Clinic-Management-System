@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Select } from '../../components/ui/Select';
 import { ActivityIcon, PlayIcon, SquareIcon, FileEditIcon } from 'lucide-react';
+import authFetch from '../../utils/authFetch';
 import { toast } from 'sonner';
 
 interface ApiAppointment {
@@ -127,8 +128,8 @@ export function TherapistSessions() {
 
     try {
       const [patientsResponse, diagnosesResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/diagnoses/get-all?page=1&limit=1000`),
       ]);
 
       const patientsResult = await patientsResponse.json();
@@ -157,7 +158,7 @@ export function TherapistSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -176,7 +177,7 @@ export function TherapistSessions() {
 
       const therapistId = String(matchedTherapist.Id ?? matchedTherapist.id ?? '');
       setTherapistApiId(therapistId);
-      const appointmentsResponse = await fetch(`${apiBaseUrl}/therapists/${therapistId}/appointments`);
+      const appointmentsResponse = await authFetch(`${apiBaseUrl}/therapists/${therapistId}/appointments`);
       const appointmentsResult = await appointmentsResponse.json();
 
       if (!appointmentsResponse.ok) {
@@ -212,7 +213,7 @@ export function TherapistSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -284,7 +285,7 @@ export function TherapistSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/sessions/create`, {
+      const response = await authFetch(`${apiBaseUrl}/sessions/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -348,7 +349,7 @@ export function TherapistSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/sessions/update/${session.id}`, {
+      const response = await authFetch(`${apiBaseUrl}/sessions/update/${session.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
@@ -422,7 +423,7 @@ export function TherapistSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/session-notes/create`, {
+      const response = await authFetch(`${apiBaseUrl}/session-notes/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -467,7 +468,7 @@ export function TherapistSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/diagnoses/create`, {
+      const response = await authFetch(`${apiBaseUrl}/diagnoses/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -517,7 +518,7 @@ export function TherapistSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/treatment-plans/create`, {
+      const response = await authFetch(`${apiBaseUrl}/treatment-plans/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

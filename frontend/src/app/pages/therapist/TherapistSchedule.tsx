@@ -6,6 +6,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { Textarea } from '../../components/ui/Textarea';
 import { CalendarIcon } from 'lucide-react';
+import authFetch from '../../utils/authFetch';
 import { toast } from 'sonner';
 
 interface ApiAppointmentRow {
@@ -58,8 +59,8 @@ export function TherapistSchedule() {
 
     try {
       const [therapistsResponse, patientsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
       ]);
 
       const [therapistsResult, patientsResult] = await Promise.all([
@@ -82,7 +83,7 @@ export function TherapistSchedule() {
 
       const therapistId = String(matchedTherapist.Id ?? matchedTherapist.id ?? '');
 
-      const appointmentsResponse = await fetch(`${apiBaseUrl}/therapists/${therapistId}/appointments`);
+      const appointmentsResponse = await authFetch(`${apiBaseUrl}/therapists/${therapistId}/appointments`);
       const appointmentsResult = await appointmentsResponse.json();
 
       if (!appointmentsResponse.ok) {
@@ -137,7 +138,7 @@ export function TherapistSchedule() {
         return;
       }
 
-      const response = await fetch(`${apiBaseUrl}/appointments/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/appointments/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -172,7 +173,7 @@ export function TherapistSchedule() {
           cancellationReason: rejectReason
         });
       } else {
-        const response = await fetch(`${apiBaseUrl}/appointments/update/${selectedAptId}`, {
+        const response = await authFetch(`${apiBaseUrl}/appointments/update/${selectedAptId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

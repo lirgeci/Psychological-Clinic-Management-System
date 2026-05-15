@@ -5,6 +5,7 @@ import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { Button } from '../../components/ui/Button';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface TherapistFormData {
   firstName: string;
@@ -77,7 +78,7 @@ const TherapistForm = ({ initialData, onSubmit, onCancel }: TherapistFormProps) 
       }
 
       try {
-        const response = await fetch(`${apiBaseUrl}/therapists/get-by-id/${initialData.id}`);
+        const response = await authFetch(`${apiBaseUrl}/therapists/get-by-id/${initialData.id}`);
         const result = await response.json();
 
         if (!response.ok) {
@@ -263,7 +264,7 @@ export function AdminTherapists() {
         throw new Error('VITE_API_BASE_URL is not configured.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -348,7 +349,7 @@ export function AdminTherapists() {
         throw new Error('Password is required when creating a therapist.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/therapists/create`, {
+      const response = await authFetch(`${apiBaseUrl}/therapists/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -405,7 +406,7 @@ export function AdminTherapists() {
         payload.password = data.password;
       }
 
-      const response = await fetch(`${apiBaseUrl}/therapists/update/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/therapists/update/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -435,7 +436,7 @@ export function AdminTherapists() {
         throw new Error('VITE_API_BASE_URL is not configured.');
       }
 
-      const response = await fetch(`${apiBaseUrl}/therapists/delete/${id}`, {
+      const response = await authFetch(`${apiBaseUrl}/therapists/delete/${id}`, {
         method: 'DELETE',
       });
 

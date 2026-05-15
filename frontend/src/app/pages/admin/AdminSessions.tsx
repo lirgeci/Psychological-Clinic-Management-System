@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/Select';
 import { Textarea } from '../../components/ui/Textarea';
 import { ActivityIcon, Edit2Icon, Trash2Icon, PlusIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface ApiSession {
   id: string;
@@ -128,7 +129,7 @@ export function AdminSessions() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`);
+      const response = await authFetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -229,13 +230,13 @@ export function AdminSessions() {
 
       let response;
       if (editingSession) {
-        response = await fetch(`${apiBaseUrl}/sessions/update/${editingSession.id}`, {
+        response = await authFetch(`${apiBaseUrl}/sessions/update/${editingSession.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
       } else {
-        response = await fetch(`${apiBaseUrl}/sessions/create`, {
+        response = await authFetch(`${apiBaseUrl}/sessions/create`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
@@ -270,7 +271,7 @@ export function AdminSessions() {
     }
 
     try {
-      const response = await fetch(`${apiBaseUrl}/sessions/delete/${sessionId}`, {
+      const response = await authFetch(`${apiBaseUrl}/sessions/delete/${sessionId}`, {
         method: 'DELETE',
       });
 

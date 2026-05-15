@@ -6,6 +6,7 @@ import { Badge } from '../../components/ui/Badge';
 import { Modal } from '../../components/ui/Modal';
 import { ClipboardListIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 const apiBaseUrl = ((import.meta as any).env?.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
 
@@ -98,9 +99,9 @@ export function PatientQuestionnaires() {
 
     try {
       const [questionnairesResponse, responsesResponse, patientsResponse] = await Promise.all([
-        fetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/questionnaire-responses/get-all?page=1&limit=1000`),
-        fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/questionnaires/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/questionnaire-responses/get-all?page=1&limit=1000`),
+        authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
       ]);
 
       const [questionnairesResult, responsesResult, patientsResult] = await Promise.all([
@@ -197,7 +198,7 @@ export function PatientQuestionnaires() {
         return;
       }
 
-      const response = await fetch(`${apiBaseUrl}/questionnaire-responses/create`, {
+      const response = await authFetch(`${apiBaseUrl}/questionnaire-responses/create`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

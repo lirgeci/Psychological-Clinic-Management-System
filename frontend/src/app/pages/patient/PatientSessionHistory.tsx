@@ -4,6 +4,7 @@ import { DataTable, Column } from '../../components/ui/DataTable';
 import { Badge } from '../../components/ui/Badge';
 import { ClockIcon } from 'lucide-react';
 import { toast } from 'sonner';
+import authFetch from '../../utils/authFetch';
 
 interface ApiSessionRow {
   id: string;
@@ -53,9 +54,9 @@ export function PatientSessionHistory() {
 
       try {
         const [patientsResponse, sessionsResponse, therapistsResponse] = await Promise.all([
-          fetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
-          fetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`),
-          fetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/patients/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/sessions/get-all?page=1&limit=1000`),
+          authFetch(`${apiBaseUrl}/therapists/get-all?page=1&limit=1000`),
         ]);
 
         const [patientsResult, sessionsResult, therapistsResult] = await Promise.all([
