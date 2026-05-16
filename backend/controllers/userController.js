@@ -450,6 +450,53 @@ exports.deleteUser = async (req, res) => {
   }
 };
 
+exports.refresh = async (req, res) => {
+  try {
+    const refreshTokenCookie = req.headers.cookie
+      ?.split('; ')
+      .find((c) => c.startsWith('refresh_token='));
+
+    if (!refreshTokenCookie) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const refreshTokenValue = refreshTokenCookie.substring('refresh_token='.length);
+    const refreshToken = await RefreshToken.findOne({
+      where: { Token: refreshTokenValue },
+    });
+
+    if (
+      !refreshToken ||
+      refreshToken.Revoked ||
+      !refreshToken.Expires ||
+      new Date(refreshToken.Expires).getTime() <= Date.now()
+    ) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const userRole = await UserRole.findOne({
+      where: { UserId: refreshToken.UserId },
+    });
+
+    if (!userRole) {
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: refreshToken.UserId,
+        roleId: userRole.RoleId,
+      },
+      process.env.JWT_SECRET || 'secret',
+      { expiresIn: '15m' }
+    );
+
+    return res.status(200).json({ token });
+  } catch (error) {
+    return res.status(500).json({ message: error.message || 'Token refresh failed.' });
+  }
+};
+
 exports.login = async (req, res) => {
   let transaction;
   try {
@@ -496,7 +543,7 @@ exports.login = async (req, res) => {
         UserId: user.Id,
         Token: refreshTokenValue,
         Expires: expiresAt,
-        Revoked: null,
+        Revoked: false,
       },
       { transaction }
     );

@@ -30,8 +30,9 @@ module.exports = (sequelize) => {
         defaultValue: DataTypes.NOW,
       },
       Revoked: {
-        type: DataTypes.DATE,
-        allowNull: true,
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
       },
       UserId: {
         type: DataTypes.INTEGER,
