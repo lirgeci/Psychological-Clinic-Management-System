@@ -9,7 +9,10 @@ import {
   ClipboardListIcon,
   LogOutIcon,
   DollarSignIcon,
-  ClockIcon } from
+  ClockIcon,
+  BellIcon,
+  CalendarX2Icon,
+  MessageSquareIcon } from
 'lucide-react';
 import { useStore } from '../../store/StoreContext';
 
@@ -68,6 +71,11 @@ export function Sidebar() {
     to: '/patient/reviews',
     icon: FileTextIcon,
     label: 'Clinical Records'
+  },
+  {
+    to: '/patient/feedback',
+    icon: MessageSquareIcon,
+    label: 'Session Feedback'
   }];
 
   const therapistLinks: SidebarLink[] = [
@@ -90,6 +98,16 @@ export function Sidebar() {
     to: '/therapist/patients',
     icon: UsersIcon,
     label: 'My Patients'
+  },
+  {
+    to: '/therapist/absence-requests',
+    icon: CalendarX2Icon,
+    label: 'Absence Requests'
+  },
+  {
+    to: '/therapist/feedback',
+    icon: MessageSquareIcon,
+    label: 'Patient Feedback'
   }];
 
   const adminLinks: SidebarLink[] = [
@@ -157,6 +175,21 @@ export function Sidebar() {
     to: '/admin/questionnaire-responses',
     icon: ClipboardListIcon,
     label: 'Responses'
+  },
+  {
+    to: '/admin/announcements',
+    icon: BellIcon,
+    label: 'Announcements'
+  },
+  {
+    to: '/admin/absence-requests',
+    icon: CalendarX2Icon,
+    label: 'Absence Requests'
+  },
+  {
+    to: '/admin/feedback',
+    icon: MessageSquareIcon,
+    label: 'Feedback'
   }];
 
   let links: SidebarLink[] = [];

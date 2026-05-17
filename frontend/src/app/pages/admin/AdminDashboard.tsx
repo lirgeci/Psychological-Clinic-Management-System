@@ -7,7 +7,9 @@ import {
   CalendarIcon,
   ActivityIcon,
   DollarSignIcon,
-  HomeIcon
+  HomeIcon,
+  BellIcon,
+  CalendarX2Icon
 } from 'lucide-react';
 
 const API_URL = (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api').replace(/\/$/, '');
@@ -20,7 +22,9 @@ export function AdminDashboard() {
     todaysAppointments: 0,
     activeSessions: 0,
     pendingInvoices: 0,
-    availableRooms: 0
+    availableRooms: 0,
+    totalAnnouncements: 0,
+    pendingAbsenceRequests: 0
   });
   const [loading, setLoading] = useState(true);
 
@@ -30,13 +34,15 @@ export function AdminDashboard() {
         setLoading(true);
         
         // Fetch all data in parallel
-        const [patientsRes, therapistsRes, appointmentsRes, sessionsRes, invoicesRes, roomsRes] = await Promise.all([
+        const [patientsRes, therapistsRes, appointmentsRes, sessionsRes, invoicesRes, roomsRes, announcementsRes, absenceRequestsRes] = await Promise.all([
           authFetch(`${API_URL}/patients/get-all`),
           authFetch(`${API_URL}/therapists/get-all`),
           authFetch(`${API_URL}/appointments/get-all`),
           authFetch(`${API_URL}/sessions/get-all`),
           authFetch(`${API_URL}/invoices/get-all`),
           authFetch(`${API_URL}/rooms/get-all`),
+          authFetch(`${API_URL}/announcements/get-all`),
+          authFetch(`${API_URL}/absence-requests/get-all`),
         ]);
 
         const patients = patientsRes.ok ? (await patientsRes.json()).patients || [] : [];
@@ -45,6 +51,8 @@ export function AdminDashboard() {
         const sessions = sessionsRes.ok ? (await sessionsRes.json()).sessions || [] : [];
         const invoices = invoicesRes.ok ? (await invoicesRes.json()).invoices || [] : [];
         const rooms = roomsRes.ok ? (await roomsRes.json()).rooms || [] : [];
+        const announcements = announcementsRes.ok ? (await announcementsRes.json()).announcements || [] : [];
+        const absenceRequests = absenceRequestsRes.ok ? (await absenceRequestsRes.json()).absenceRequests || [] : [];
 
         const today = new Date().toISOString().split('T')[0];
         const todaysAppointments = appointments.filter((a: any) => a.AppointmentDate === today).length;
@@ -58,7 +66,9 @@ export function AdminDashboard() {
           todaysAppointments,
           activeSessions,
           pendingInvoices,
-          availableRooms
+          availableRooms,
+          totalAnnouncements: announcements.length,
+          pendingAbsenceRequests: absenceRequests.filter((request: any) => request.Status === 'Pending').length,
         });
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -68,7 +78,9 @@ export function AdminDashboard() {
           todaysAppointments: 0,
           activeSessions: 0,
           pendingInvoices: 0,
-          availableRooms: 0
+          availableRooms: 0,
+          totalAnnouncements: 0,
+          pendingAbsenceRequests: 0
         });
       } finally {
         setLoading(false);
@@ -170,6 +182,30 @@ export function AdminDashboard() {
             ))
           )}
         </div>
+
+        <Card title="Clinic Communications">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <div>
+                <p className="text-sm text-slate-500">Announcements</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.totalAnnouncements}</p>
+              </div>
+              <div className="h-11 w-11 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center">
+                <BellIcon className="h-5 w-5" />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+              <div>
+                <p className="text-sm text-slate-500">Pending Absence Requests</p>
+                <p className="text-2xl font-bold text-slate-900">{stats.pendingAbsenceRequests}</p>
+              </div>
+              <div className="h-11 w-11 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                <CalendarX2Icon className="h-5 w-5" />
+              </div>
+            </div>
+          </div>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           <Card title="Quick Actions">

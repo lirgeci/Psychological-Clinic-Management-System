@@ -16,6 +16,9 @@ const treatmentPlanRoutes = require('./routes/treatmentPlanRoutes');
 const questionnaireRoutes = require('./routes/questionnaireRoutes');
 const questionnaireResponseRoutes = require('./routes/questionnaireResponseRoutes');
 const invoiceRoutes = require('./routes/invoiceRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
+const absenceRequestRoutes = require('./routes/absenceRequestRoutes');
+const feedbackRoutes = require('./routes/feedbackRoutes');
 const { Role, User, UserRole, Therapist } = require('./models');
 
 dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
@@ -43,6 +46,9 @@ app.use('/api', treatmentPlanRoutes);
 app.use('/api', questionnaireRoutes);
 app.use('/api', questionnaireResponseRoutes);
 app.use('/api', invoiceRoutes);
+app.use('/api', announcementRoutes);
+app.use('/api', absenceRequestRoutes);
+app.use('/api', feedbackRoutes);
 
 app.get('/api/health', (_req, res) => {
 	res.status(200).json({

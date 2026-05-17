@@ -13,11 +13,14 @@ const PatientQuestionnaires = lazy(() => import('./pages/patient/PatientQuestion
 const PostSessionReview = lazy(() => import('./pages/patient/PostSessionReview').then((m) => ({ default: m.PostSessionReview })));
 const PatientInvoices = lazy(() => import('./pages/patient/PatientInvoices').then((m) => ({ default: m.PatientInvoices })));
 const PatientSessionHistory = lazy(() => import('./pages/patient/PatientSessionHistory').then((m) => ({ default: m.PatientSessionHistory })));
+const PatientFeedback = lazy(() => import('./pages/patient/PatientFeedback').then((m) => ({ default: m.PatientFeedback })));
 // Therapist Pages
 const TherapistDashboard = lazy(() => import('./pages/therapist/TherapistDashboard').then((m) => ({ default: m.TherapistDashboard })));
 const TherapistSchedule = lazy(() => import('./pages/therapist/TherapistSchedule').then((m) => ({ default: m.TherapistSchedule })));
 const TherapistSessions = lazy(() => import('./pages/therapist/TherapistSessions').then((m) => ({ default: m.TherapistSessions })));
 const TherapistPatients = lazy(() => import('./pages/therapist/TherapistPatients').then((m) => ({ default: m.TherapistPatients })));
+const TherapistAbsenceRequests = lazy(() => import('./pages/therapist/TherapistAbsenceRequests').then((m) => ({ default: m.TherapistAbsenceRequests })));
+const TherapistFeedback = lazy(() => import('./pages/therapist/TherapistFeedback').then((m) => ({ default: m.TherapistFeedback })));
 // Admin Pages
 const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers').then((m) => ({ default: m.AdminUsers })));
@@ -32,6 +35,9 @@ const AdminDiagnoses = lazy(() => import('./pages/admin/AdminDiagnoses').then((m
 const AdminTreatmentPlans = lazy(() => import('./pages/admin/AdminTreatmentPlans').then((m) => ({ default: m.AdminTreatmentPlans })));
 const AdminSessionNotes = lazy(() => import('./pages/admin/AdminSessionNotes').then((m) => ({ default: m.AdminSessionNotes })));
 const AdminQuestionnaireResponses = lazy(() => import('./pages/admin/AdminQuestionnaireResponses').then((m) => ({ default: m.AdminQuestionnaireResponses })));
+const AdminAnnouncements = lazy(() => import('./pages/admin/AdminAnnouncements').then((m) => ({ default: m.AdminAnnouncements })));
+const AdminAbsenceRequests = lazy(() => import('./pages/admin/AdminAbsenceRequests').then((m) => ({ default: m.AdminAbsenceRequests })));
+const AdminFeedback = lazy(() => import('./pages/admin/AdminFeedback').then((m) => ({ default: m.AdminFeedback })));
 
 const LoadingFallback = () => (
   <div className="flex min-h-[40vh] items-center justify-center text-sm text-slate-500">
@@ -62,6 +68,7 @@ export function App() {
             <Route path="sessions" element={withSuspense(<PatientSessionHistory />)} />
             <Route path="invoices" element={withSuspense(<PatientInvoices />)} />
             <Route path="reviews" element={withSuspense(<PostSessionReview />)} />
+            <Route path="feedback" element={withSuspense(<PatientFeedback />)} />
           </Route>
 
           {/* Therapist Routes */}
@@ -72,6 +79,8 @@ export function App() {
             <Route path="schedule" element={withSuspense(<TherapistSchedule />)} />
             <Route path="sessions" element={withSuspense(<TherapistSessions />)} />
             <Route path="patients" element={withSuspense(<TherapistPatients />)} />
+            <Route path="absence-requests" element={withSuspense(<TherapistAbsenceRequests />)} />
+            <Route path="feedback" element={withSuspense(<TherapistFeedback />)} />
           </Route>
 
           {/* Admin Routes */}
@@ -93,6 +102,9 @@ export function App() {
             <Route
               path="questionnaire-responses"
               element={withSuspense(<AdminQuestionnaireResponses />)} />
+            <Route path="announcements" element={withSuspense(<AdminAnnouncements />)} />
+            <Route path="absence-requests" element={withSuspense(<AdminAbsenceRequests />)} />
+            <Route path="feedback" element={withSuspense(<AdminFeedback />)} />
 
           </Route>
 

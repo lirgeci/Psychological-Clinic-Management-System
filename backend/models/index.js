@@ -37,6 +37,9 @@ db.TreatmentPlan = require('./TreatmentPlan')(sequelize);
 db.SessionNote = require('./SessionNote')(sequelize);
 db.QuestionnaireResponse = require('./QuestionnaireResponse')(sequelize);
 db.Invoice = require('./Invoice')(sequelize);
+db.Announcement = require('./Announcement')(sequelize);
+db.AbsenceRequest = require('./AbsenceRequest')(sequelize);
+db.Feedback = require('./Feedback')(sequelize);
 
 Object.keys(db).forEach((modelName) => {
   if (db[modelName] && typeof db[modelName].associate === 'function') {

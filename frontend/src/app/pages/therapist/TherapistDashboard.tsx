@@ -42,6 +42,14 @@ interface ApiAppointment {
   roomId?: string;
 }
 
+interface ApiAnnouncement {
+  id: string;
+  title: string;
+  message: string;
+  createdAt: string;
+  expiresAt?: string | null;
+}
+
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
 
 export function TherapistDashboard() {
@@ -60,6 +68,7 @@ export function TherapistDashboard() {
   const [selectedResponse, setSelectedResponse] = useState<any>(null);
   const [apiTherapist, setApiTherapist] = useState<ApiTherapist | null>(null);
   const [apiAppointments, setApiAppointments] = useState<ApiAppointment[]>([]);
+  const [announcements, setAnnouncements] = useState<ApiAnnouncement[]>([]);
   const [editForm, setEditForm] = useState({
     firstName: '',
     lastName: '',
@@ -137,6 +146,23 @@ export function TherapistDashboard() {
         );
 
         setApiAppointments(mappedAppointments);
+
+        const announcementResponse = await authFetch(`${apiBaseUrl}/announcements/get-all`);
+        const announcementResult = await announcementResponse.json();
+
+        if (announcementResponse.ok) {
+          const mappedAnnouncements: ApiAnnouncement[] = (announcementResult.announcements || []).map(
+            (announcement: Record<string, unknown>) => ({
+              id: String(announcement.Id ?? announcement.id ?? ''),
+              title: String(announcement.Title ?? announcement.title ?? ''),
+              message: String(announcement.Message ?? announcement.message ?? ''),
+              createdAt: String(announcement.CreatedAt ?? announcement.createdAt ?? ''),
+              expiresAt: announcement.ExpiresAt ? String(announcement.ExpiresAt) : announcement.expiresAt ? String(announcement.expiresAt) : null,
+            })
+          );
+
+          setAnnouncements(mappedAnnouncements);
+        }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load therapist data.';
         toast.error(message);
@@ -255,6 +281,28 @@ export function TherapistDashboard() {
 
   return (
     <div className="space-y-6">
+      <Card title="Announcements">
+        {announcements.length > 0 ? (
+          <div className="space-y-3">
+            {announcements.slice(0, 3).map((announcement) => (
+              <div key={announcement.id} className="rounded-lg border border-blue-100 bg-blue-50 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h3 className="font-semibold text-slate-900">{announcement.title}</h3>
+                    <p className="mt-1 text-sm text-slate-700 whitespace-pre-wrap">{announcement.message}</p>
+                  </div>
+                  <span className="text-xs text-slate-500 whitespace-nowrap">
+                    {announcement.createdAt ? new Date(announcement.createdAt).toLocaleDateString() : ''}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">No active announcements right now.</p>
+        )}
+      </Card>
+
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-bold text-slate-900">Therapist Dashboard</h1>
       </div>
